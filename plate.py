@@ -9,6 +9,7 @@ class Plate(CalcConfig):
     plate_type: str
     count: int
     dilution: int
+    weighed: bool
     num_plts: int = 1
 
     # post init dunder method for validation
@@ -19,6 +20,7 @@ class Plate(CalcConfig):
 
     @property
     def cnt_range(self):
+        # self.cnt_range[0] is min, self.cnt_range[1] is max
         return self.PLATE_RANGES.get(self.plate_type, None)
 
     @property

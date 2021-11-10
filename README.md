@@ -1,219 +1,179 @@
-# Introduction
-This script calculates reportable counts for the. While the calculation is simple in most cases (in the NCIMS program),
+# CalCFU
+
+---
+This script calculates reportable counts for plating methods outlined in the NCIMS 2400s. While the calculation is simple in most cases (in the NCIMS program),
 this script allows for more robust calculations where any dilution and number of plates can be used.
 
 The code below outlines the entire process and references the NCIMS 2400s.
 * [2400a: SPC - Pour Plate](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf)
 * [2400a-4: SPC - Petrifilm](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf)
 
-# Plate Class
-Plates are set up via the Plate class.
+## Plate Class
+Plates are set up via the `Plate` dataclass.
 
 ```python
 from plate import Plate
 
-# 1 plate with a 10^-2 dilution yielding a total count of 234.
-plates_1 = Plate(count=234, dilution="-2", num_plts=1)
-# 1 plate with a 10^-3 dilution yielding a total count of 53
-plates_2 = Plate(count=53, dilution="-3", num_plts=1)
+# 1 PAC plate with a 10^-2 dilution of a weighed sample yielding a total count of 234.
+plates_1 = Plate(plate_type="PAC", count=234, dilution=-2, weighed=True, num_plts=1)
+# 1 PAC plate with a 10^-1 dilution of a weighed sample yielding a total count of 790.
+plates_2 = Plate(plate_type="PAC",count=790, dilution=-1, weighed=True, num_plts=1)
 ```
 
-### Instance Variables
-Each instance of the class is created with three arguments which are set as instance variables.
+### Fields
+Each instance of the dataclass is created with three arguments which are set as fields.
 
 Arguments:
-
-* ```count``` [ *int* ]
+* `plate_type` [ *str* ]
+    * Plate type. 
+* `count` [ *int* ]
     * Raw plate counts.
-* ```dilution``` [ *str* ]
+* `dilution` [ *str* ]
     * Dilution used to plate.
-* ```num_plts``` [ *int* ]
+* `weighed` [ *bool* ]
+    * Sample was weighed or not.
+* `num_plts` [ *int* ]
     * Number of plates for each dilution.
-
-Other instance variables are also declared and are later updated and referenced during calculation.
-
-* ```in_between``` [ *bool* ] 
-    * If count is within the accepted count range for plate type.
-* ```sign``` [ *str* ]
-    * If greater than or equal to minimum or maximum count.
-* ```closest_bound``` [ *int* ]
-    * Minimum or maximum count.
-* ```abs_diff``` [ *int* ]
-    * The absolute difference between the count and the closest_bound.
+    * By default, this is set to 1.
 
 ```python
-class Plate:
-    def __init__(self, count, dilution, num_plts):
-        self._count = count
-        self._dilution = dilution
-        self._num_plts = num_plts
-
-        self._in_between = False
-        self._sign = ""
-        self._closest_bound = 0
-        self._abs_diff = 0
-```
-
-### Getters and Setters
-Getter and setter methods are also defined to allow for alteration and validation of input arguments.
-
-```python
-@property
-def dilution(self):
-    if self._dilution == "1:1":
-        return 0
-    else:
-        return int(self._dilution)
-
-@dilution.setter
-def dilution(self, dilution):
-    self._dilution = dilution
-```
-
-Here, when the variable is retrieved from the Plate instance in the calculation steps,
-it is converted to an integer. If it is "1:1", then 0 is returned instead.
-
-# Count Calculator
-The calculator is contained in the CountCalculator class.
-Using the previously created plates, a CountCalculator instance is created.
-
-```python
-from calculator import CountCalculator
-
-# Setup calculator with two HSCC plates that have weighed product.
-calc = CountCalculator(weighed=True, plate_type="HSCC", plates=[plates_1, plates_2])
+@dataclass(frozen=True, order=True)
+class Plate(CalcConfig):
+    plate_type: str
+    count: int
+    dilution: int
+    num_plts: int = 1
 ```
 
 ### Class variables
-Two class variables are set for the class. 
+When an instance of the `Plate` or `CalCFU` class is created, it inherits from the `CalcConfig` class which stores
+all necessary configuration variables for the calculator.
 
-* ```PLATE_RANGES``` [ *dict* ]
-    * Acceptable count ranges for each plate type.
-* ```WEIGHED_UNITS``` [ *dict* ]
+* `PLATE_RANGES` [ *dict* ]
+    * Acceptable counts for each plate type.
+    * NCIMS 2400s
+* `WEIGHED_UNITS` [ *dict* ]
     * Units for if weighed or not.
+* `VALID_DILUTIONS` [ *tuple* ]
+    * Acceptable dilutions for each plate type.
+* `INPUT_VALIDATORS` [ *dict* ]
+    * A dictionary of anonymous functions used to validate input arguments.
 
 ```python
-class CountCalculator:
+@dataclass(frozen=True, order=True)
+class Plate(CalcConfig):
+    ...
+
+@dataclass(frozen=True, order=True)
+class CalCFU(CalcConfig):
+    ...
+```
+
+```python
+class CalcConfig:
+    VALID_DILUTIONS = (0, -1, -2, -3, -4)
     PLATE_RANGES = {
         "SPC": (25, 250),
         "PAC": (25, 250),
         "RAC": (25, 250),
         "CPC": (1, 154),
         "HSCC": (1, 154),
-        "PCC": (1, 154)
-    }
+        "PCC": (1, 154),
+        "YM": (),
+        "RYM": ()}
+    WEIGHED_UNITS = {True: " / g", False: " / mL"}
+    INPUT_VALIDATORS = {
+        # count must be an integer and greater than 0
+        "plate_type": lambda plate_type: plate_type in CalcConfig.PLATE_RANGES,
+        "count": lambda count: isinstance(count, int) and count > 0,
+        # dilution must be in valid dilutions
+        "dilution": lambda dilution: dilution in CalcConfig.VALID_DILUTIONS,
+        "weighed": lambda weighed: isinstance(weighed, bool),
+        # num_plts must be an integer and greater than 0
+        "num_plts": lambda num_plts: isinstance(num_plts, int) and num_plts > 0,
+        
+        # plates must all be an instance of the Plate dataclass and must be all the same plate_type
+        "plates": lambda plates, plt_cls: all(isinstance(plate, plt_cls) and plate.plate_type == plates[0].plate_type
+                                              for plate in plates),
+        "all_weighed": lambda plates: all(plates[0].weighed == plate.weighed for plate in plates)}
+ 
+ 
+ ```
 
-    WEIGHED_UNITS = {
-        True: " / g",
-        False: " / mL"
-    }
+### Argument Validation
+Arguments are validated via a `__post_init__` method where each key is checked 
+against conditions in `self.INPUT_VALIDATORS`
+```python
+# post init dunder method for validation
+def __post_init__(self):
+    for key, value in asdict(self).items():
+        assert self.INPUT_VALIDATORS[key](value), \
+            "Invalid value. Check calc_config.py."
+
 ```
 
-
-### Instance variables
-Each instance of CountCalculator is initialized with three arguments:
-
-* ```weighed``` [ *bool* ]
-    * If product plated was weighed or not.
-* ```plate_type```[ *str* ]
-    * Plate types. Valid items in ```PLATE_RANGES``` keys.
-    * If invalid, throws ValueError.
-* ```plates``` [ *list* ]
-    * Contains Plate instances.
-
-Using the above arguments, other instance variables are defined.
-
-* ```main_dil``` [ *int* ]
-    * Finds the lowest dilution among the plates.
-    * ```max(-2, -3)``` would return ```-2```.
-* ```reported_units``` [ *str* ]
-    * Formats units based on plate type and if product plated was weighed.
-* ```cnt_range``` [ *tuple* ]
-    * The acceptable colony range for a given plate type.
-    * The method ```_set_bounds``` returns the result. See "Methods" section below.
+### Properties
+Properties are also defined to allow for read-only calculation of attributes from the input arguments.
 
 ```python
-def __init__(self, weighed, plate_type, plates):
-    self.weighed = weighed
-    self.plate_type = plate_type
-    self.plates = plates
+@property
+def cnt_range(self):
+    # self.cnt_range[0] is min, self.cnt_range[1] is max
+    return self.PLATE_RANGES.get(self.plate_type, None)
 
-    self.main_dil = max(plate.dilution for plate in plates)
-    self.reported_units = f"{plate_type}{self.UNITS.get(self.weighed)}"
-
-    self.cnt_range = self._set_bounds()
-    self._check_in_between()
-    self._check_closer_to()
+@property
+def sign(self):
+    if 0 < self.count < self.cnt_range[0]:
+        return "<"
+    elif self.count > self.cnt_range[1]:
+        return ">"
+    else:
+        return ""
 ```
 
+Here, a sign of a plate is returned based on if a plate count is above or below the max or min place count, respectively. 
+
+```python
+# 1 plate with a 10^-2 dilution of a weighed sample yielding a total count of 234.
+plates_1 = Plate(plate_type="PAC", count=234, dilution=-2, weighed=True, num_plts=1)
+# 1 plate with a 10^-1 dilution of a weighed sample yielding a total count of 790.
+plates_2 = Plate(plate_type="PAC",count=790, dilution=-1, weighed=True, num_plts=1)
+
+print(plates_1.sign) # ""
+print(plates_2.sign) # "<"
+```
+
+# CalCFU
+The calculator is contained in the `CalCFU` dataclass.
+Using the previously created plates, a `CalCFU` instance is created.
+
+```python
+from calculator import CalCFU
+
+# Setup calculator with two PAC plates that contain a weighed sample.
+calc = CalCFU(plates=[plates_1, plates_2])
+```
+
+### Fields
+Each instance of CountCalculator is initialized with the plates to be calculated:
+
+* ```plates``` [ *list* ]
+    * Contains Plate instances. 
+    * Validated via `__post_init__` method.
+    
+```python
+@dataclass(frozen=True, order=True)
+class CalCFU(CalcConfig):
+    plates: List
+```
+
+### Properties
 
 ## Methods
-Three methods are called during initialization:
-
-* ```_set_bounds()```
-    * Returns the acceptable plate range for the provided plate type.
-    
-```python 
-def _set_bounds(self):
-    if cnt_range := self.PLATE_RANGES.get(self.plate_type, None):
-        return cnt_range
-    else:
-        raise ValueError("Invalid plate type.")
-```
-
-* ```_check_in_between()```
-    * Validates plate counts and updates Plate instance variables ```in_between``` and ```sign```.
-    * Conditional statements compare if counts are in between acceptable ranges.
-    * Pour Plates 
-        * SPC ([NCIMS 2400a-16e-f](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=7))
-        * CPC ([NCIMS 2400a-17e](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=9))
-    * Petrifilm
-        * PAC / RAC ([NCIMS 2400a-4-16e-f](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=10))
-        * PCC / HSCC ([NCIMS 2400a-17e](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11))
-
-```python
-def _check_in_between(self):
-    for plate in self.plates:
-        count = plate.count
-        if count < 0:
-            raise ValueError("Invalid number of colonies (Less than 0).")
-        elif 0 < count < self.cnt_range[0]:
-            plate.in_between = False
-            plate.sign = "<"
-        elif self.cnt_range[0] <= count <= self.cnt_range[1]:
-            plate.in_between = True
-            plate.sign = ""
-        elif count > self.cnt_range[1]:
-            plate.in_between = False
-            plate.sign = ">"
-```
-
-* ```_check_closer_to()```
-    * Updates Plate instance variables ```closest_bound``` and ```abs_diff```.
-    *  ```bounds_abs_diff``` [ *dict* ]
-        * Keys: Accepted colony count for plate
-        * Value: Absolute difference of count.
-   
-    *  ```closest_bound``` [ *int* ]
-        * Lowest acceptable colony count bound from ```bound_abs_diff```.
-        * Closer counts will have a smaller absolute difference.
-        * |27 - 25| = 2 and |27 - 250| = 223. So, 27 is closer to 25.
-
-```python
-def _check_closer_to(self):
-    for plate in self.plates:
-        # Dict of bounds and their abs difference between the number of colonies.
-        bounds_abs_diff = {bound: abs(plate.count - bound) for bound in self.cnt_range}
-        # return closest bound based on min abs diff between count and bound
-        closest_bound = min(bounds_abs_diff, key=bounds_abs_diff.get)
-        # set plate closest bound and abs diff
-        plate.closest_bound = closest_bound
-        plate.abs_diff = bounds_abs_diff[closest_bound]
-```
 
 Two methods are available for use with the CountCalculator instance: ```bank_round``` and ```calc_result```
 
-### calc_result()
+### `calc_result()`
 
 This method is the "meat-and-potatoes" of the script. 
 It calculates the reported/adjusted count based on the plates given. 

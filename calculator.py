@@ -7,17 +7,18 @@ from calc_config import CalcConfig
 
 
 @dataclass(frozen=True, order=True)
-class CFUCalculator(CalcConfig):
-    weighed: bool
-    plates: List[Plate]
+class CalCFU(CalcConfig):
+    plates: List
 
     def __post_init__(self):
+        # check if plate first and then if all samples were/were not weighed
         assert self.INPUT_VALIDATORS["plates"](self.plates, Plate), "Invalid plate list."
+        assert self.INPUT_VALIDATORS["all_weighed"](self.plates), "Invalid plate list. Must be all weighed or not all weighed."
 
     @property
     def reported_units(self):
         # grab first plate and use plate type. should be all the same
-        return f"{self.plates[0].plate_type}{self.WEIGHED_UNITS.get(self.weighed)}"
+        return f"{self.plates[0].plate_type}{self.WEIGHED_UNITS.get(self.plates[0].weighed)}"
 
     def _calc_multi_dil_valid(self, valid_plates):
         total = sum(plate.count for plate in valid_plates)
