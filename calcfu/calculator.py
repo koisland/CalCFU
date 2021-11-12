@@ -16,24 +16,32 @@ class CalCFU(CalcConfig):
         assert self.INPUT_VALIDATORS["all_weighed"](self.plates), "Invalid plate list. Must be all weighed or not all weighed."
 
     @property
+    def valid_plates(self):
+        return [plate for plate in self.plates if plate.in_between]
+
+    @property
     def reported_units(self):
         # grab first plate and use plate type. should be all the same
         return f"{self.plates[0].plate_type}{self.WEIGHED_UNITS.get(self.plates[0].weighed)}"
 
-    def _calc_multi_dil_valid(self, valid_plates):
+    def _calc_multi_dil_valid(self):
+        valid_plates = self.valid_plates
         total = sum(plate.count for plate in valid_plates)
-        main_dil = max(plate.dilution for plate in self.plates)
+        main_dil = max(plate.dilution for plate in valid_plates)
         # If all plates have the same dilution.
         if all(plate.dilution == valid_plates[0].dilution for plate in valid_plates):
-            div_factor = 1
+            # each plates is equally weighed because all the same dil
+            div_factor = sum(1 * plate.num_plts for plate in valid_plates)
         else:
             dil_weights = []
             for plate in valid_plates:
                 if plate.dilution == main_dil:
                     dil_weights.append(1 * plate.num_plts)
                 else:
+                    # calculate dil weight relative to main_dil
                     abs_diff_dil = abs(main_dil) - abs(plate.dilution)
                     dil_weights.append((10 ** abs_diff_dil) * plate.num_plts)
+
             div_factor = sum(dil_weights)
 
         return int(total / (div_factor * (10 ** main_dil)))
@@ -42,29 +50,34 @@ class CalCFU(CalcConfig):
         hbound_plates = [plate for plate in self.plates if plate.closest_bound == plate.cnt_range[1]]
         if len(hbound_plates) == 0:
             # if neither close to hbound:
-            #   take any plate's closest bound, multiply by reciprocal of dil, and add sign to calc
-            return f"{self.plates[0].sign}{self.plates[0].closest_bound * (10 ** abs(self.plates[0].dilution))}"
+            #   take any plate's closest bound and multiply by reciprocal of dil
+            return self.plates[0].sign, self.plates[0].closest_bound * (10 ** abs(self.plates[0].dilution))
         else:
             # Use reduce to reduce hbound_plates to a single plate:
             #   plate with the lowest absolute difference between the hbound and value
             closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.abs_diff), hbound_plates)
-            return f"{closest_to_hbound.count * (10 ** abs(closest_to_hbound.dilution))}"
+            return closest_to_hbound.sign, closest_to_hbound.closest_bound * (10 ** abs(closest_to_hbound.dilution))
 
     def calculate(self, round_to=2, report_count=True):
-        valid_plates = [plate for plate in self.plates if plate.in_between]
+        valid_plates = self.valid_plates
+        # assign empty str to sign var. will be default unless no plate valid
+        sign = ""
+        # track if estimated i.e. no plate is valid.
+        estimated = False
+
         if len(valid_plates) == 0:
-            adj_count = self._calc_no_dil_valid()
+            sign, adj_count = self._calc_no_dil_valid()
+            estimated = True
         elif len(valid_plates) == 1:
+            # only one plate is valid so multiple by reciprocal of dil.
             valid_plate = valid_plates[0]
             adj_count = valid_plate.count * (10 ** abs(valid_plate.dilution))
         else:
-            adj_count = self._calc_multi_dil_valid(valid_plates)
+            adj_count = self._calc_multi_dil_valid()
+
         if report_count:
-            if isinstance(adj_count, int):
-                return f"{self.bank_round(adj_count, round_to)} {self.reported_units}"
-            else:
-                # string = no valid dil result. add estimated to units
-                return f"{adj_count} e{self.reported_units}"
+            units = f"{('' if not estimated else 'e')}{self.reported_units}"
+            return f"{sign}{self.bank_round(adj_count, round_to)} {units}"
         else:
             return adj_count
 
@@ -82,6 +95,6 @@ class CalCFU(CalcConfig):
             # place_from_left = 2 for 2(5)553. to round, needs to be -3 so subtract length by place and multiply by -1.
             adj_place_from_left = -1 * (value_len - place_from_left)
             final_val = round(adj_value, adj_place_from_left)
-            return int(final_val)
+            return final_val
         else:
             raise ValueError("Invalid value or place (Not an integer).")

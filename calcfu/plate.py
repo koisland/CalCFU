@@ -56,13 +56,3 @@ class Plate(CalcConfig):
     def closest_bound(self):
         # return closest bound based on min abs diff between count and bound
         return min(self._bounds_abs_diff, key=self._bounds_abs_diff.get)
-
-    def __str__(self):
-        return f"Plate Type: {self.plate_type}"\
-               f"Dilution: {self.dilution}\n"\
-               f"Count: {self.count} colonies\n" \
-               f"Number of plates: {self.num_plts}\n" \
-               f"In range: {self.in_between}\n" \
-               f"Sign: {self.sign}\n" \
-               f"Closest colony bound: {self.closest_bound}\n" \
-               f"Absolute difference: {self.abs_diff}"

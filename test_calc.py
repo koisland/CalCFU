@@ -1,6 +1,6 @@
 import unittest
-from plate import Plate
-from calculator import CalCFU
+from calcfu.plate import Plate
+from calcfu.calculator import CalCFU
 
 
 class TestCalc(unittest.TestCase):

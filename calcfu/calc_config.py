@@ -25,6 +25,6 @@ class CalcConfig:
 
         # plates (>=2) must all be an instance of the Plate dataclass and must be all the same plate_type
         "plates": lambda plates, plt_cls: len(plates) >= 2 and all(isinstance(plate, plt_cls) and
-                                                                  plate.plate_type == plates[0].plate_type
-                                                                  for plate in plates),
+                                                                   plate.plate_type == plates[0].plate_type
+                                                                   for plate in plates),
         "all_weighed": lambda plates: all(plates[0].weighed == plate.weighed for plate in plates)}
