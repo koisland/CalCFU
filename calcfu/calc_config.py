@@ -1,7 +1,11 @@
+import pathlib
 from collections.abc import Iterable
 
 
 class CalcConfig:
+    FPATH_WD = pathlib.Path(__file__).parents[1]
+    FPATH_3M = pathlib.Path.joinpath(FPATH_WD, "data", "3m_reader_output.txt")
+
     VALID_DILUTIONS = (0, -1, -2, -3, -4)
     PLATE_RANGES = {
         "SPC": (25, 250),

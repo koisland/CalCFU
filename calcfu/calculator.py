@@ -2,8 +2,8 @@ from typing import List
 from functools import reduce
 from dataclasses import dataclass
 
-from plate import Plate
-from calc_config import CalcConfig
+from calcfu.plate import Plate
+from calcfu.calc_config import CalcConfig
 
 
 @dataclass(frozen=True, order=True)
@@ -13,7 +13,8 @@ class CalCFU(CalcConfig):
     def __post_init__(self):
         # check if plate first and then if all samples were/were not weighed
         assert self.INPUT_VALIDATORS["plates"](self.plates, Plate), "Invalid plate list."
-        assert self.INPUT_VALIDATORS["all_weighed"](self.plates), "Invalid plate list. Must be all weighed or not all weighed."
+        assert self.INPUT_VALIDATORS["all_weighed"](
+            self.plates), "Invalid plate list. Must be all weighed or not all weighed."
 
     @property
     def valid_plates(self):
@@ -46,17 +47,15 @@ class CalCFU(CalcConfig):
 
         return int(total / (div_factor * (10 ** main_dil)))
 
-    def _calc_no_dil_valid(self):
-        hbound_plates = [plate for plate in self.plates if plate.closest_bound == plate.cnt_range[1]]
-        if len(hbound_plates) == 0:
-            # if neither close to hbound:
-            #   take any plate's closest bound and multiply by reciprocal of dil
-            return self.plates[0].sign, self.plates[0].closest_bound * (10 ** abs(self.plates[0].dilution))
-        else:
-            # Use reduce to reduce hbound_plates to a single plate:
-            #   plate with the lowest absolute difference between the hbound and value
-            closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.abs_diff), hbound_plates)
-            return closest_to_hbound.sign, closest_to_hbound.closest_bound * (10 ** abs(closest_to_hbound.dilution))
+    def _calc_no_dil_valid(self, report_count):
+        # Use reduce to reduce plates to a single plate:
+        #   plate with the lowest absolute difference between the hbound and value
+        closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.hbound_abs_diff), self.plates)
+
+        # if reporting, use closest bound; otherwise, use count.
+        value = closest_to_hbound.closest_bound if report_count else closest_to_hbound.count
+
+        return closest_to_hbound.sign, value * (10 ** abs(closest_to_hbound.dilution))
 
     def calculate(self, round_to=2, report_count=True):
         valid_plates = self.valid_plates
@@ -66,7 +65,7 @@ class CalCFU(CalcConfig):
         estimated = False
 
         if len(valid_plates) == 0:
-            sign, adj_count = self._calc_no_dil_valid()
+            sign, adj_count = self._calc_no_dil_valid(report_count)
             estimated = True
         elif len(valid_plates) == 1:
             # only one plate is valid so multiple by reciprocal of dil.

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 
-from calc_config import CalcConfig
+from calcfu.calc_config import CalcConfig
 
 
 # frozen for read-only
@@ -47,10 +47,6 @@ class Plate(CalcConfig):
     @property
     def hbound_abs_diff(self):
         return abs(self.count - self.cnt_range[1])
-
-    @property
-    def abs_diff(self):
-        return self._bounds_abs_diff[self.closest_bound]
 
     @property
     def closest_bound(self):

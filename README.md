@@ -1,8 +1,12 @@
 # CalCFU
 
 ---
-This script calculates reportable counts for plating methods outlined in the NCIMS 2400s. While the calculation is simple in most cases (in the NCIMS program),
-this script allows for more robust calculations where any dilution and number of plates can be used.
+This Python script calculates reportable counts for plating methods outlined in the NCIMS 2400 using two custom classes.
+* `Plate` for storing plate characteristics.
+* `CalCFU` for the calculator logic.
+
+While the calculation can be performed easily in most cases,
+this script allows for bulk-automated calculations where any dilution and number of plates can be used. 
 
 The code below outlines the entire process and references the NCIMS 2400s.
 * [NCIMS 2400a: SPC - Pour Plate (Oct 2013)](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf)
@@ -152,15 +156,26 @@ def hbound_abs_diff(self):
     return abs(self.count - self.cnt_range[1])
 
 @property
-def abs_diff(self):
-    return self._bounds_abs_diff[self.closest_bound]
-
-@property
 def closest_bound(self):
     # return closest bound based on min abs diff between count and bound
     return min(self._bounds_abs_diff, key=self._bounds_abs_diff.get)
 ```
-
+* `cnt_range` [ *tuple: 2* ]
+    * Countable colony numbers for a plate type.
+* `in_between` [ *bool* ]
+    * If `count` within countable range.
+* `sign` [ *str* ]
+    * Sign for reported count if all `count` values are outside the acceptable range.
+    * Used in `CalCFU._calc_no_dil_valid`.
+* `_bounds_abs_diff` [ *dict* ]
+    * Absolute differences of `count` and low and high `cnt_ranges`.
+* `hbound_abs_diff` [ *int* ]
+    * Absolute difference of `count` and high of `cnt_range`.
+    * Used in 
+* `closest_bound` [ *int* ]
+    * Closest count in `cnt_range` to `count`.
+    * Based on minimum absolute difference between `count` and `cnt_range`s\. 
+      The smaller the difference, the closer the `count` is to a bound.
 ---
 
 ## `CalCFU`
@@ -175,8 +190,9 @@ calc = CalCFU(plates=[plates_1, plates_2])
 ```
 
 ### Fields
-Each instance of CountCalculator is initialized with a lost of the plates to be calculated:
+Each instance of CountCalculator is initialized with a list of the plates to be calculated:
 
+Arguments:
 * `plates` [ *list* ]
     * Contains Plate instances. 
     * Validated via `__post_init__` method.
@@ -259,38 +275,39 @@ def calculate(self, round_to=2, report_count=True):
 ```
 
 
-### `calc_no_dil_valid(self) `
+### `calc_no_dil_valid(self, report_count)`
 This function runs when *no plates have valid counts*.
 
+Arguments:
+* `report_count` [ *bool* ]
+    * Same as `calculate`.    
+
 Procedure:
-1. Plates that have the highest acceptable count bound are taken.
-    * [NCIMS 2400a.16.h](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
-2. Reduce the list of plates down by checking adjacent plates' `abs_diff`
-  and returning the one with **smallest difference**. 
-    * Final plate is the closest to the highest acceptable bound.
-    * `Ex. |267 - 250| = 17 and |275 - 250| = 25` 
-        * `17 < 25 so 267 is closer to 250 than 275.`
-3. Finally, format with `sign` and multiply the closest bound by the reciprocal of the dilution.
+1. Reduce the `self.plates` down to one plate by checking adjacent plates' `hbound_abs_diff`. 
+   * **The plate with the smallest difference is closest to the highest acceptable count bound.**
+       * [NCIMS 2400a.16.h](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
+   * `Ex. |267 - 250| = 17 and |275 - 250| = 25` 
+   * `17 < 25 so 267 is closer to 250 than 275.`
+2. Set throwaway variable `value` to `count` or `closest_bound` based on if reported count needed.
+3. Finally, return `sign` and multiply the closest bound by the reciprocal of the dilution.
     * [NCIMS 2400a.16.l](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
     
 ``` python
-def _calc_no_dil_valid(self):
-    hbound_plates = [plate for plate in self.plates if plate.closest_bound == plate.cnt_range[1]]
-    if len(hbound_plates) == 0:
-        # if neither close to hbound:
-        #   take any plate's closest bound and multiply by reciprocal of dil
-        return self.plates[0].sign, self.plates[0].closest_bound * (10 ** abs(self.plates[0].dilution))
-    else:
-        # Use reduce to reduce hbound_plates to a single plate:
-        #   plate with the lowest absolute difference between the hbound and value
-        closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.abs_diff), hbound_plates)
-        return closest_to_hbound.sign, closest_to_hbound.closest_bound * (10 ** abs(closest_to_hbound.dilution))
+def _calc_no_dil_valid(self, report_count):     
+    # Use reduce to reduce plates to a single plate:
+    #   plate with the lowest absolute difference between the hbound and value
+    closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.hbound_abs_diff), self.plates)
+
+    # if reporting, use closest bound; otherwise, use count.
+    value = closest_to_hbound.closest_bound if report_count else closest_to_hbound.count
+    
+    return closest_to_hbound.sign, value * (10 ** abs(closest_to_hbound.dilution))
 ```
 
 ### `calc_multi_dil_valid(self)`
 This method runs if *multiple plates have valid counts*.
 
-Variables
+Variables:
 * `main_dil` [ *int* ]
     * The lowest dilution of the `valid_plates`. 
 * `dil_weights` [ *list* ]
@@ -327,7 +344,6 @@ Procedure:
 ![](docs/figures/adj_count.png)
 
 
-
 ```python
 def _calc_multi_dil_valid(self):
     valid_plates = self.valid_plates
@@ -357,16 +373,16 @@ def _calc_multi_dil_valid(self):
 ### `bank_round(value, place_from_left)` 
 
 This method rounds values using banker's rounding. 
-String manipulation was used rather than working with floats to [avoid errors](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues). 
+String manipulation was used rather than working with floats to [avoid rounding errors](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues). 
 
-Arguments
+Arguments:
 * `value` [ *int* ]
     * Value to be rounded.
 * `place_from_left` [ *int* ]
-    * Digit to round to. Leftmost digit is 0.
+    * Digit to round to. **Leftmost digit is 1 (NOT 0)**.
     * See `calculate()` for examples.
 
-Variables
+Variables:
 * `value_len` [ *int* ]
     * Len of *string value*.
 * `str_abbr_value` [ *str* ]
@@ -401,18 +417,31 @@ def bank_round(value, place_from_left):
         # place_from_left = 2 for 2(5)553. to round, needs to be -3 so subtract length by place and multiply by -1.
         adj_place_from_left = -1 * (value_len - place_from_left)
         final_val = round(adj_value, adj_place_from_left)
-        return int(final_val)
+        return final_val
     else:
         raise ValueError("Invalid value or place (Not an integer).")
 ```
 
-Procedure
-1. `bank_round(value=24,553, place_from_left=2)`
-2. 
+Example:
+```python 
+result = bank_round(value=24553, place_from_left=2)
+```
 
+1. Find the length of the value as a string. 
+    * `value_len=5` 
+2. Abbreviate value as string. 
+    * `str_abbr_value="245"`
+3. Pad value as string out to original length. 
+    * `str_padded_value="24500"`
+4. Convert padded value back to a number. 
+    * `adj_value=24500`
+5. Reindex `place_from_left` for the `round` function. 
+    * `adj_place_from_left=-3`
+6. Round `adj_value` with `place_from_left`, the new index. 
+    * `result=24000`
 ---
 
-### To view [unittests](test_calc.py)...
+### For full examples and tests, view [test_calc.py](test_calc.py)...
 
 ---
 

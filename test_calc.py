@@ -32,11 +32,20 @@ class TestCalc(unittest.TestCase):
             plt_invalid_dilution_num = Plate(count=12, plate_type="PAC", dilution=-20, weighed=True, num_plts=1)
             plt_invalid_plate_categ = Plate(count=12, plate_type="3M PAC", dilution=-2, weighed=True, num_plts=1)
 
+    def test_plt_prop(self):
+        # all the other properties are simple and not worth testing.
+        # closest_bound is the most complicated property, I guess?
+        self.assertEqual(self.plt_1.closest_bound, 25)
+        self.assertEqual(self.plt_3.closest_bound, 25)
+        self.assertEqual(self.plt_10.closest_bound, 250)
+
     def test_setup_calc(self):
 
         with self.assertRaises(AssertionError):
             calc_invalid_plates = CalCFU(plates={})
             calc_invalid_num_plates = CalCFU(plates=[self.plt_1])
+            # plt_1 is weighed but plt_3 is not.
+            calc_invalid_weigh_plates = CalCFU(plates=[self.plt_1, self.plt_3])
 
             # Not highlighted because error not due to explicit typing
             calc_invalid_plates_type = CalCFU(plates=[self.plt_1, "self.plt_2"])
@@ -62,9 +71,9 @@ class TestCalc(unittest.TestCase):
 
         # Plates 3 & 4.
         self.calc_2 = CalCFU(plates=[self.plt_3, self.plt_4])
-        # 13 is closer to 250. 13 / 0.1 = 130
-        self.assertEqual(self.calc_2.calculate(report_count=False), "<2500")
-        self.assertEqual(self.calc_2.calculate(), "<2500 eRAC / g")
+        # Plate 4 (13) is closer to 250. 13 / 0.1 = 130
+        self.assertEqual(self.calc_2.calculate(report_count=False), 130)
+        self.assertEqual(self.calc_2.calculate(), "<250 eRAC / g")
 
         # Plates 5 & 6
         self.calc_3 = CalCFU(plates=[self.plt_5, self.plt_6])
