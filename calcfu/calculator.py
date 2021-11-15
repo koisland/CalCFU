@@ -1,9 +1,13 @@
+import logging
 from typing import List
 from functools import reduce
 from dataclasses import dataclass
 
 from calcfu.plate import Plate
 from calcfu.calc_config import CalcConfig
+from calcfu.exceptions import CalCFUError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, order=True)
@@ -12,9 +16,10 @@ class CalCFU(CalcConfig):
 
     def __post_init__(self):
         # check if plate first and then if all samples were/were not weighed
-        assert self.INPUT_VALIDATORS["plates"](self.plates, Plate), "Invalid plate list."
-        assert self.INPUT_VALIDATORS["all_weighed"](
-            self.plates), "Invalid plate list. Must be all weighed or not all weighed."
+        if not self.INPUT_VALIDATORS["plates"](self.plates, Plate):
+            raise CalCFUError("Invalid plate list. All items in list are not Plate instances.")
+        if not self.INPUT_VALIDATORS["all_weighed"](self.plates):
+            raise CalCFUError("Invalid plate list. Must be all weighed or not all weighed.")
 
     @property
     def valid_plates(self):
@@ -76,7 +81,8 @@ class CalCFU(CalcConfig):
 
         if report_count:
             units = f"{('' if not estimated else 'e')}{self.reported_units}"
-            return f"{sign}{self.bank_round(adj_count, round_to)} {units}"
+            # add sign, thousands separator, and units
+            return f"{sign}{'{:,}'.format(self.bank_round(adj_count, round_to))} {units}"
         else:
             return adj_count
 

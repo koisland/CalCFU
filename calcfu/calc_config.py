@@ -1,10 +1,16 @@
 import pathlib
+import datetime
 from collections.abc import Iterable
 
 
 class CalcConfig:
     FPATH_WD = pathlib.Path(__file__).parents[1]
-    FPATH_3M = pathlib.Path.joinpath(FPATH_WD, "data", "3m_reader_output.txt")
+    FPATH_DATA = pathlib.Path.joinpath(FPATH_WD, "data")
+    FPATH_LOG = pathlib.Path.joinpath(FPATH_WD,
+                                      "logs",
+                                      f"log_{datetime.datetime.strftime(datetime.datetime.now(), '%m_%d_%y')}.log")
+    DEF_COLS_3M = {"Date/Time of Image", "Red Raw Count"}
+    DEF_SAVE_OUTPUT = {"csv": ".csv", "excel": ".xlsx"}
 
     VALID_DILUTIONS = (0, -1, -2, -3, -4)
     PLATE_RANGES = {
@@ -20,7 +26,7 @@ class CalcConfig:
     INPUT_VALIDATORS = {
         # count must be an integer and greater than 0
         "plate_type": lambda plate_type: plate_type in CalcConfig.PLATE_RANGES,
-        "count": lambda count: isinstance(count, int) and count > 0,
+        "count": lambda count: isinstance(count, int) and count >= 0,
         # dilution must be in valid dilutions
         "dilution": lambda dilution: dilution in CalcConfig.VALID_DILUTIONS,
         "weighed": lambda weighed: isinstance(weighed, bool),

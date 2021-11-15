@@ -82,6 +82,9 @@ class CalCFU(CalcConfig):
 
 ```python
 class CalcConfig:
+    # Logging/File Path Variables
+    ...
+    
     VALID_DILUTIONS = (0, -1, -2, -3, -4)
     PLATE_RANGES = {
         "SPC": (25, 250),
@@ -139,7 +142,7 @@ def in_between(self):
 
 @property
 def sign(self):
-    if 0 < self.count < self.cnt_range[0]:
+    if 0 <= self.count < self.cnt_range[0]:
         return "<"
     elif self.count > self.cnt_range[1]:
         return ">"
@@ -269,7 +272,8 @@ def calculate(self, round_to=2, report_count=True):
 
     if report_count:
         units = f"{('' if not estimated else 'e')}{self.reported_units}"
-        return f"{sign}{self.bank_round(adj_count, round_to)} {units}"
+        # add sign, thousands separator, and units
+        return f"{sign}{'{:,}'.format(self.bank_round(adj_count, round_to))} {units}"
     else:
         return adj_count
 ```

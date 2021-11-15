@@ -1,6 +1,10 @@
+import logging
 from dataclasses import dataclass, asdict
 
 from calcfu.calc_config import CalcConfig
+from calcfu.exceptions import PlateError
+
+logger = logging.getLogger(__name__)
 
 
 # frozen for read-only
@@ -15,8 +19,8 @@ class Plate(CalcConfig):
     # post init dunder method for validation
     def __post_init__(self):
         for key, value in asdict(self).items():
-            assert self.INPUT_VALIDATORS[key](value), \
-                "Invalid value. Check calc_config.py."
+            if not self.INPUT_VALIDATORS[key](value):
+                raise PlateError(f"Invalid Plate argument ({key}: {value}). Check calc_config.py.")
 
     @property
     def cnt_range(self):
@@ -32,7 +36,7 @@ class Plate(CalcConfig):
 
     @property
     def sign(self):
-        if 0 < self.count < self.cnt_range[0]:
+        if 0 <= self.count < self.cnt_range[0]:
             return "<"
         elif self.count > self.cnt_range[1]:
             return ">"

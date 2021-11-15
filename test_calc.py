@@ -1,6 +1,7 @@
 import unittest
 from calcfu.plate import Plate
 from calcfu.calculator import CalCFU
+from calcfu.exceptions import *
 
 
 class TestCalc(unittest.TestCase):
@@ -22,7 +23,7 @@ class TestCalc(unittest.TestCase):
         self.plt_10 = Plate("SPC", 521, -1, False, 1)
 
     def test_create_plt(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(PlateError):
             plt_invalid_count_type = Plate(plate_type="PAC", count="12", dilution=-2, weighed=True, num_plts=1)
             plt_invalid_dilution_type = Plate(plate_type="PAC", count=12, dilution="-2", weighed=True, num_plts=1)
             plt_invalid_weighed = Plate(plate_type="PAC", count=12, dilution=-2, weighed="True", num_plts=1)
@@ -41,7 +42,7 @@ class TestCalc(unittest.TestCase):
 
     def test_setup_calc(self):
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(CalCFUError):
             calc_invalid_plates = CalCFU(plates={})
             calc_invalid_num_plates = CalCFU(plates=[self.plt_1])
             # plt_1 is weighed but plt_3 is not.
@@ -67,7 +68,7 @@ class TestCalc(unittest.TestCase):
         self.calc_1 = CalCFU(plates=[self.plt_1, self.plt_2])
         # 35 + 212 = 247 / 0.011 = 22454.5454
         self.assertEqual(self.calc_1.calculate(report_count=False), 22454)
-        self.assertEqual(self.calc_1.calculate(), "22000 PAC / mL")
+        self.assertEqual(self.calc_1.calculate(), "22,000 PAC / mL")
 
         # Plates 3 & 4.
         self.calc_2 = CalCFU(plates=[self.plt_3, self.plt_4])
