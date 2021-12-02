@@ -1,9 +1,9 @@
-setwd("~/CalCFU/")
+setwd("~/CalCFU/app")
 
-source("app/globals.R")
+source("globals.R")
 
-source("app/ui.R")
+source("ui.R")
 
-source("app/server.R")
+source("server.R")
 
 shinyApp(ui, server)
