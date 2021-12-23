@@ -1,6 +1,0 @@
-library(purrr)
-library(shiny)
-library(shinythemes)
-library(dplyr)
-library(shinyjs)
-library(rhandsontable)

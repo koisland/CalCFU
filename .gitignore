@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# R Stuff
+.Rhistory
+.Rprofile
+*.Rproj
+
+
 # Distribution / packaging
 .Python
 build/
@@ -131,3 +137,4 @@ dmypy.json
 
 # R
 .RData
+.Rproj.user

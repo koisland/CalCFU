@@ -5,10 +5,10 @@ import datetime
 import pandas as pd
 import numpy as np
 
-from calcfu.plate import Plate
-from calcfu.calculator import CalCFU
-from calcfu.exceptions import ReaderError
-from calcfu.calc_config import CalcConfig
+from plate import Plate
+from calculator import CalCFU
+from exceptions import ReaderError
+from calc_config import CalcConfig
 
 logger = logging.getLogger(__name__)
 

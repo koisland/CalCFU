@@ -1,8 +1,8 @@
 import logging
 from dataclasses import dataclass, asdict
 
-from calcfu.calc_config import CalcConfig
-from calcfu.exceptions import PlateError
+from calc_config import CalcConfig
+from exceptions import PlateError
 
 logger = logging.getLogger(__name__)
 

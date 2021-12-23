@@ -1,11 +1,12 @@
 import logging
+import numpy as np
 from typing import List
 from functools import reduce
 from dataclasses import dataclass
 
-from calcfu.plate import Plate
-from calcfu.calc_config import CalcConfig
-from calcfu.exceptions import CalCFUError
+from plate import Plate
+from calc_config import CalcConfig
+from exceptions import CalCFUError
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +47,11 @@ class CalCFU(CalcConfig):
                 else:
                     # calculate dil weight relative to main_dil
                     abs_diff_dil = abs(main_dil) - abs(plate.dilution)
-                    dil_weights.append((10 ** abs_diff_dil) * plate.num_plts)
+                    dil_weights.append((10 ** int(abs_diff_dil)) * plate.num_plts)
 
             div_factor = sum(dil_weights)
 
-        return int(total / (div_factor * (10 ** main_dil)))
+        return int(total / (div_factor * (10 ** int(main_dil))))
 
     def _calc_no_dil_valid(self, report_count):
         # Use reduce to reduce plates to a single plate:
@@ -88,7 +89,7 @@ class CalCFU(CalcConfig):
 
     @staticmethod
     def bank_round(value, place_from_left):
-        if isinstance(value, int) and isinstance(place_from_left, int):
+        if isinstance(value, int) or isinstance(value, np.int64) and isinstance(place_from_left, int):
             # Length of unrounded value.
             value_len = len(str(value))
             # remove digits that would alter rounding only allowing 1 digit before desired place

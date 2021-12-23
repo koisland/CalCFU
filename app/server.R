@@ -15,7 +15,6 @@ process_data <- function(df, input) {
       filter(between(DateTime, input$dates[1], input$dates[2]))
       # # add id col
       # mutate(ID = row_number(), .before=1)
-      
     return(dt_df) 
     
   } else {
@@ -57,112 +56,191 @@ read_data <- function(input) {
   
 }
 
+
 server <- function(input, output, session) {
   
   rv <- reactiveValues(
-    man_df = NULL
+    res_man_df = NULL,
+    res_auto_df = NULL,
+    opt_msg = "",
+    opt_dils = NULL,
+    opt_grp = NULL
   )
+  
+  # Initialize df w/inputs for manual entry.
+  init_man_df <- function (num) {
+    man_df = data.frame(Label = as.character(paste("Plate", seq(num))), 
+                        Count = as.character(rep(0, num)), 
+                        Dilution = as.character(rep(-1, num)),
+                        Type = as.character(rep("PAC", num)),
+                        NumberPlates = as.character(rep(1, num)),
+                        stringsAsFactors=FALSE)
+    
+    # Add inputs. Can't access them through input[[?_#]]?
+    # Pretty slow. Also will reset values on setting new n. Find way to use isolate() correctly.
+    for (n in 1:num){
+      man_df$Label[n] <- as.character(textInput(paste0("lbl_", n), 
+                                                label = NULL, 
+                                                width = "100px"))
+      
+      man_df$Count[n] <- as.character(numericInput(paste0("cnt_", n),
+                                                   label = NULL,
+                                                   width = "100px",
+                                                   value = 1,
+                                                   min = 1))
+      man_df$Dilution[n] <- as.character(selectInput(paste0("dil_", n), 
+                                                     label = NULL, 
+                                                     choices = list("-3" = -3, "-2" = -2, "-1" = -1, "1:1" = 0), 
+                                                     selected = -2, 
+                                                     width = "100px"))
+      man_df$Type[n] <- as.character(selectInput(paste0("type_", n),
+                                                 label = NULL, 
+                                                 choices = list("SPC", "PAC", "RAC", "CPC", "HSCC", "PCC"),
+                                                 selected = "PAC",
+                                                 width = "100px"))
+      
+      man_df$NumberPlates[n] <- as.character(numericInput(paste0("num_plts", n),
+                                                          label = NULL,
+                                                          width = "100px",
+                                                          value = 1,
+                                                          min = 1))
+    }
+    return(man_df)
+  }
+  
+  
 
   # File uploaded.
-  initial_data <- reactive({
-    req(input$file)
+  upl_data <- reactive({
     # validates dates
     validate(need(!is.na(input$dates[1]) & !is.na(input$dates[2]), 
                   "Error: Please provide both a start and an end date."))
     validate(need(input$dates[1] <= input$dates[2], 
                   "Error: Start date should be earlier than end date."))
     
-    df <- read_data(input)
-    return(process_data(df, input))
+    df <- read_data(input) %>% process_data(input)
+    return(df)
 
   })
-
-  observeEvent(input$man_submit, {
-    # Try to get data. If NULL (refreshing) then return empty string so doesn't crash.
-    lbls <- map_chr(plt_names_manual(), ~ input[[paste0(.x, "_lbl")]] %||% "")
-    cnts <- map_chr(plt_names_manual(), ~ input[[paste0(.x, "_cnt")]] %||% "")
-    dils <- map_chr(plt_names_manual(), ~ input[[paste0(.x, "_dil")]] %||% "")
-    types <- map_chr(plt_names_manual(), ~ input[[paste0(.x, "_type")]] %||% "")
-    n_plts <- map_chr(plt_names_manual(), ~ input[[paste0(.x, "_n_plts")]] %||% "")
-    
-    # if everything is filled out. probably will change later
-    if (all(!is.na(c(lbls, cnts, dils, types, n_plts)))) {
-      df <- tibble(Label = lbls, 
-                   Count = cnts, 
-                   Dilution = dils, 
-                   Type = types, 
-                   NumberPlts = n_plts)
-      rv$man_df <- df
-    } else {
-      showNotification("An input is unfilled. Try again.")
-    }
-    
-    
-  })
-
-  output$initial <- renderDataTable(
-    options = list(scrollX = TRUE),
-    {
-    
-    final_df <- initial_data()
-    return(final_df)
-    })
   
-  output$results <- renderDataTable(
+  # When manual submit, get ids of each widget and extract values into df
+  observeEvent(input$man_submit, {
+    
+    col_names <- c("Label", "Count", "Dilution", "Type", "NumberPlates")
+    ids <- c("lbl_", "cnt_", "dil_", "type_", "num_plts")
+    
+    # create matrix of ids using outer product and number of plate groups.
+    lbl_mat <- t(outer(ids, seq(10), paste0))
+    res_mat <- apply(lbl_mat, c(1,2), function(x) input[[x]])
+    colnames(res_mat) <- col_names
+
+    res_man_df <- data.frame(res_mat)
+    
+    # store res df as reactive value to access
+    rv$res_man_df <- res_man_df
+  })
+  
+  output$auto_input <- renderDT(
+    options = list(scrollX = TRUE),
+    selection = "single",
+    editable = TRUE, 
+    {
+      req(input$file)
+      df = upl_data()
+      rv$res_auto_df <- df
+      return(df)
+    }
+    )
+  
+  # dt proxy to edit a cell
+  proxy_auto_input <- dataTableProxy("auto_input")
+  
+  # on cell edit, replace value, and replace datatable.
+  observeEvent(input$auto_input_cell_edit, {
+    info <- input$auto_input_cell_edit
+    
+    # replace value in reactive values and coerce to whatever dtype in that pos
+    rv$res_auto_df[info$row, info$col] <- coerceValue(info$value, rv$res_auto_df[info$row, info$col])
+    
+    # replace DT and keep state of table 
+    replaceData(proxy_auto_input, rv$res_auto_df, resetPaging = FALSE)
+  })
+  
+  # set options msgs and enable or disable inputs.
+  observeEvent(input$options, {
+    if (length(input$options) == 2) {
+      rv$opt_msg <- "Set both grouping and dilutions below."
+      enable("opt_grp")
+      enable("opt_dils")
+    } else if ("Allow no ID? (Group by #)" %in% input$options ) {
+      rv$opt_msg <- "Set grouping below."
+      enable("opt_grp")
+      disable("opt_dils")
+    } else if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
+      rv$opt_msg <- "Set dilution below."
+      enable("opt_dils")
+      disable("opt_grp")
+    } else {
+      rv$opt_msg <- ""
+      disable("opt_dils")
+      disable("opt_grp")
+    }
+    # Will not trigger event for checkbox if NULL ignored.
+  }, ignoreNULL = FALSE)
+  
+  
+  # Store options.
+  observeEvent(input$opt_dils, {
+    rv$opt_dils <- input$opt_dils
+  })
+  
+  observeEvent(input$opt_grp, {
+    rv$opt_grp <- input$opt_grp
+  })
+  
+  # Display options msg.
+  output$options_msg <- renderText({
+    return(rv$opt_msg)
+  })
+  
+  output$auto_results <- renderDataTable(
     options = list(scrollX = TRUE),
     {
-      
+     # TODO: Filter out entries without and attached id.
+      print(rv$res_auto_df)
     }
   )
   
-  # store number of plates with id plt_#
-  # must be multiple of 2.
-  plt_names_manual <- reactive({
-    validate(need(input$n %% 2 == 0, "Error: Choose multiple of 2."))
-    paste0("plt_", seq_len(input$n))
-  })
-  
-
-  # manual plate ui.
-  # isolate stores value outside of even after ui is updated.
-  output$man_lbls_ui <- renderUI({
-    lbls <- map(plt_names_manual(), ~ textInput(paste0(.x, "_lbl"), label = NULL, 
-                                        value = gsub("plt_", "Plate ", .x)))
-  })
-  
-  output$man_cnts_ui <- renderUI({
-    map(plt_names_manual(), ~ numericInput(paste0(.x, "_cnt"), label = NULL, 
-                                           value = isolate(.x), min = 1))
-    })
-  
-  output$man_dils_ui <- renderUI({
-    map(plt_names_manual(), ~ selectInput(paste0(.x, "_dil"),
-                                         label = NULL,
-                                         choices = list("-3" = -3,
-                                                        "-2" = -2,
-                                                        "-1" = -1,
-                                                        "1:1" = 0),
-                                         selected = -2))
-  })
-  
-  output$man_types_ui <- renderUI({
-    map(plt_names_manual(), ~ selectInput(paste0(.x, "_type"),
-                                         label = NULL,
-                                         choices = list("SPC",
-                                                        "PAC",
-                                                        "RAC",
-                                                        "CPC",
-                                                        "HSCC",
-                                                        "PCC")))
-  })
-  
-  output$man_num_plts_ui <- renderUI({
-    map(plt_names_manual(), ~ numericInput(paste0(.x, "_n_plts"), label = NULL, 
-                                           value = isolate(.x), min = 1))
-  })
+  output$man_input <- renderDataTable(
+    # https://stackoverflow.com/questions/57215607/render-dropdown-for-single-column-in-dt-shiny
+    {
+      init_man_df(10)
+    }, 
+    selection = 'none', escape = FALSE, server = FALSE,
+    options = list(dom = 't', paging = FALSE, ordering = FALSE),
+    callback = JS("table.rows().every(function(i, tab, row) {
+        var $this = $(this.node());
+        $this.attr('id', this.data()[0]);
+        $this.addClass('shiny-input-container');
+      });
+      Shiny.unbindAll(table.table().node());
+      Shiny.bindAll(table.table().node());")
+  )
   
   output$man_results <- renderDataTable({
-    rv$man_df
+    req(input$man_submit, rv$res_man_df)
+    t_i_path <- paste0(tempfile(), ".csv")
+    t_o_path <- paste0(tempfile(), ".csv")
+    
+    # write manual df to disk as csv
+    write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
+    
+    # Run sh script to py calcfu scripts
+    cmd <- c("calcfu.sh", t_i_path, t_o_path)
+    res <- system2("bash", args = cmd, stdout = TRUE)
+
+    return(read.csv(t_o_path))
+    
     
   })
 }
