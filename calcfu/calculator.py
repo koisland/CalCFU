@@ -18,7 +18,7 @@ class CalCFU(CalcConfig):
     def __post_init__(self):
         # check if plate first and then if all samples were/were not weighed
         if not self.INPUT_VALIDATORS["plates"](self.plates, Plate):
-            raise CalCFUError("Invalid plate list. All items in list are not Plate instances.")
+            raise CalCFUError("Invalid plate list. Not Plate instances, the same plate type, or there are <2 Plates.")
         if not self.INPUT_VALIDATORS["all_weighed"](self.plates):
             raise CalCFUError("Invalid plate list. Must be all weighed or not all weighed.")
 

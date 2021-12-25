@@ -1,5 +1,3 @@
-
-
 ui <- fluidPage(
   # allow shiny js
   useShinyjs(),
@@ -18,10 +16,13 @@ ui <- fluidPage(
                # Input: Select separator ----
                selectInput("sep", "Separator",
                            choices = c(Comma = ",", Semicolon = ";", Tab = "\t"),
-                           selected = "\t"),
+                           selected = ","),
                 
                # Input: Checkbox if file has header ----
                checkboxInput("header", "File contains a header row?", TRUE)),
+        
+        # adjust color of options msg
+        tags$head(tags$style("#options_msg{color: red; font-size: 16px;}")),
         
         column(4, 
                dateRangeInput("dates", "Date Range", 
@@ -37,17 +38,16 @@ ui <- fluidPage(
                         textOutput("options_msg"),
                         
                         # disable by default and enable based on options selected.
-                        shinyjs::disabled(numericInput("opt_grp", "Number per Group", min=2, value = 2)),
+                        shinyjs::disabled(numericInput("opt_grp_n", "Number per Group", 
+                                                       min=2, value = 2)),
                         shinyjs::disabled(selectInput("opt_dils", "Dilutions", 
                                                       choices = c("1:1 / -1", "-1 / -2", 
-                                                                  "-2 / -3", "-3 / -4")))
+                                                                  "-2 / -3", "-3 / -4"),
+                                                      selected = "-2 / -3"))
                ))
       ), 
       
       hr(),
-    
-      # adjust color of options msg
-      tags$head(tags$style("#options_msg{color: red; font-size: 16px;}")),
       
       mainPanel(
         width = 900,

@@ -20,7 +20,7 @@ class Plate(CalcConfig):
     def __post_init__(self):
         for key, value in asdict(self).items():
             if not self.INPUT_VALIDATORS[key](value):
-                raise PlateError(f"Invalid Plate argument ({key}: {value}). Check calc_config.py.")
+                raise PlateError(f"Invalid Plate argument ({key}: {value} [{type(value)}]). Check calc_config.py.")
 
     @property
     def cnt_range(self):

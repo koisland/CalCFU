@@ -1,3 +1,4 @@
+# track_usage(storage_mode = store_json(path = "/root/logs/"))
 
 process_data <- function(df, input) {
   # find date column.
@@ -30,6 +31,19 @@ read_data <- function(input) {
       df <- read.csv(input$file$datapath,
                      header = input$header,
                      sep = input$sep)
+      
+      if (!isTRUE(input$header)) {
+        # if no header, add colnames. can't do if header, cause might erase data.
+        column_names <- readLines("../data/3M_colnames.txt")
+        
+        # check if column names same length as df.
+        if (length(column_names) == length(names(df))) {
+          names(df) <- column_names
+        } else {
+          stop(safeError("One or multiple columns are missing."))
+        }
+      }
+      
       return(df)
     },
     error = function(e) {
@@ -63,8 +77,9 @@ server <- function(input, output, session) {
     res_man_df = NULL,
     res_auto_df = NULL,
     opt_msg = "",
-    opt_dils = NULL,
-    opt_grp = NULL
+    opt_dils = "-2 / -3",
+    opt_grp = "id",
+    opt_grp_n = "2"
   )
   
   # Initialize df w/inputs for manual entry.
@@ -108,8 +123,6 @@ server <- function(input, output, session) {
     return(man_df)
   }
   
-  
-
   # File uploaded.
   upl_data <- reactive({
     # validates dates
@@ -140,18 +153,6 @@ server <- function(input, output, session) {
     rv$res_man_df <- res_man_df
   })
   
-  output$auto_input <- renderDT(
-    options = list(scrollX = TRUE),
-    selection = "single",
-    editable = TRUE, 
-    {
-      req(input$file)
-      df = upl_data()
-      rv$res_auto_df <- df
-      return(df)
-    }
-    )
-  
   # dt proxy to edit a cell
   proxy_auto_input <- dataTableProxy("auto_input")
   
@@ -170,20 +171,23 @@ server <- function(input, output, session) {
   observeEvent(input$options, {
     if (length(input$options) == 2) {
       rv$opt_msg <- "Set both grouping and dilutions below."
-      enable("opt_grp")
+      rv$opt_grp <- "num"
+      enable("opt_grp_n")
       enable("opt_dils")
-    } else if ("Allow no ID? (Group by #)" %in% input$options ) {
-      rv$opt_msg <- "Set grouping below."
-      enable("opt_grp")
+    } else if ("Allow no ID? (Group by #)" %in% input$options) {
+      rv$opt_msg <- "Set number per grouping below."
+      rv$opt_grp <- "num"
+      enable("opt_grp_n")
       disable("opt_dils")
     } else if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
       rv$opt_msg <- "Set dilution below."
       enable("opt_dils")
-      disable("opt_grp")
+      disable("opt_grp_n")
     } else {
       rv$opt_msg <- ""
+      rv$opt_grp <- "id"
       disable("opt_dils")
-      disable("opt_grp")
+      disable("opt_grp_n")
     }
     # Will not trigger event for checkbox if NULL ignored.
   }, ignoreNULL = FALSE)
@@ -194,8 +198,8 @@ server <- function(input, output, session) {
     rv$opt_dils <- input$opt_dils
   })
   
-  observeEvent(input$opt_grp, {
-    rv$opt_grp <- input$opt_grp
+  observeEvent(input$opt_grp_n, {
+    rv$opt_grp_n <- input$opt_grp_n
   })
   
   # Display options msg.
@@ -203,11 +207,46 @@ server <- function(input, output, session) {
     return(rv$opt_msg)
   })
   
+  output$auto_input <- renderDT(
+    options = list(scrollX = TRUE),
+    selection = "single",
+    editable = TRUE, 
+    {
+      req(input$file)
+      df = upl_data()
+      # save df to reactive values
+      rv$res_auto_df <- df
+      return(df)
+    }
+  )
+  
   output$auto_results <- renderDataTable(
     options = list(scrollX = TRUE),
     {
-     # TODO: Filter out entries without and attached id.
-      print(rv$res_auto_df)
+      req(input$file, rv$res_auto_df)
+      t_i_path <- paste0(tempfile(), ".csv")
+      t_o_path <- paste0(tempfile(), ".csv")
+      
+      # write manual df to disk as csv
+      write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
+      
+      # Run args to calcfu scripts
+      # TODO: Add weighed and other widgets
+      cmd <- c("-i", t_i_path, "-o", t_o_path, 
+               "-g", rv$opt_grp, "-gn", rv$opt_grp_n, 
+               "-d", rv$opt_dils)
+      res <- system2("python3", args = cmd, stdout = TRUE)
+  
+      # cmd <- c("calc_auto.sh", t_i_path, t_o_path, "False", rv$opt_grp, rv$opt_grp_n, rv$opt_dils)
+      # res <- system2("bash", args = cmd, stdout = TRUE)
+      
+      if (file.exists(t_o_path)){
+        return(read.csv(t_o_path))
+      } else {
+        # if file doesn't exist, py script failed. output error.
+        stop(safeError(res))
+      }
+      
     }
   )
   
@@ -236,8 +275,11 @@ server <- function(input, output, session) {
     write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
     
     # Run sh script to py calcfu scripts
-    cmd <- c("calcfu.sh", t_i_path, t_o_path)
-    res <- system2("bash", args = cmd, stdout = TRUE)
+    cmd <- c("-i", t_i_path, "-o", t_o_path)
+    res <- system2("python3", args = cmd, stdout = TRUE)
+    
+    # cmd <- c("calc_man.sh", t_i_path, t_o_path)
+    # res <- system2("bash", args = cmd, stdout = TRUE)
 
     return(read.csv(t_o_path))
     

@@ -1,12 +1,11 @@
-library(purrr)
 library(shiny)
 library(shinythemes)
 library(dplyr)
 library(DT)
-library(rvest)
 library(shinyWidgets)
 library(shinycssloaders)
 library(shinyjs)
+library(shinylogs)
 
 source("ui.R")
 

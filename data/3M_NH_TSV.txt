@@ -1,6 +1,3 @@
-3M Petrifilm Plate Reader File Name: PetriLogFile.3MX
-
-Technician	Sample ID	Date/Time of Image	Plate Type	Dilution	Barcode Text	Red Raw Count	Red Edited Count	Red Calculated Count	Red with Gas Raw Count	Red with Gas Edited Count	Red with Gas Calculated Count	Blue Raw Count	Blue Edited Count	Blue Calculated Count	Blue with Gas Raw Count	Blue with Gas Edited Count	Blue with Gas Calculated Count	Comment
 SYSTEM ADMINISTRATOR	Verification - Pass	10/17/2020 1:25:19 PM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
 SYSTEM ADMINISTRATOR	Verification - Pass	11/17/2020 8:54:52 AM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
 SYSTEM ADMINISTRATOR		11/17/2020 8:56:12 AM	AC	1 : 100		134	-	13400	-	-	-	-	-	-	-	-	-	
@@ -1191,3 +1188,93 @@ SYSTEM ADMINISTRATOR		10/30/2021 1:38:39 PM	AC	1 : 1		24	-	24	-	-	-	-	-	-	-	-	-
 SYSTEM ADMINISTRATOR		10/30/2021 1:38:45 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
 SYSTEM ADMINISTRATOR		10/30/2021 1:38:50 PM	AC	1 : 1		11	-	11	-	-	-	-	-	-	-	-	-	
 SYSTEM ADMINISTRATOR		10/30/2021 1:38:55 PM	AC	1 : 1		2	-	2	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	Verification - Pass	11/12/2021 3:58:15 PM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
+SYSTEM ADMINISTRATOR		11/12/2021 4:05:31 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:06:05 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:07:05 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	Verification - Pass	11/12/2021 4:07:40 PM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
+SYSTEM ADMINISTRATOR		11/12/2021 4:07:49 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:07:59 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:08:07 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:08:21 PM	AC	1 : 1		64	-	64	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:09:13 PM	AC	1 : 1		2	-	2	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:09:45 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:09:52 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:00 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:07 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:16 PM	AC	1 : 1		2	-	2	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:23 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:32 PM	AC	1 : 1		90	-	90	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:40 PM	AC	1 : 1		10	-	10	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:48 PM	AC	1 : 1		25	-	25	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:10:57 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:11:12 PM	AC	1 : 1		261	-	261	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:11:21 PM	AC	1 : 1		49	-	49	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:11:29 PM	AC	1 : 1		3	-	3	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:11:36 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:11:50 PM	AC	1 : 1		3	-	3	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:03 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:17 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:23 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:31 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:37 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:43 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:12:47 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:13:05 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:13:12 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:13:19 PM	AC	1 : 1		34	-	34	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		11/12/2021 4:13:27 PM	AC	1 : 1		42	-	42	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	Verification - Pass	12/23/2021 1:07:21 PM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
+SYSTEM ADMINISTRATOR	Verification - Pass	12/23/2021 1:12:20 PM	VE	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-
+SYSTEM ADMINISTRATOR		12/23/2021 1:12:59 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		12/23/2021 1:13:09 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR		12/23/2021 1:13:17 PM	AC	1 : 1		0	-	0	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	704.1-1	12/23/2021 1:14:04 PM	AC	1 : 1		17	-	17	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	704.1-2	12/23/2021 1:14:10 PM	AC	1 : 1		6	-	6	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	705.1-1	12/23/2021 1:15:08 PM	AC	1 : 1		28	-	28	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	705.1-2	12/23/2021 1:15:15 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	706.1-1	12/23/2021 1:15:25 PM	AC	1 : 1		22	-	22	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	706.1-2	12/23/2021 1:15:32 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	707.1-1	12/23/2021 1:16:37 PM	AC	1 : 1		12	-	12	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	707.1-2	12/23/2021 1:16:46 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	708.1-1	12/23/2021 1:16:57 PM	AC	1 : 1		93	-	93	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	708.1-2	12/23/2021 1:17:04 PM	AC	1 : 1		8	-	8	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	709.2-1	12/23/2021 1:17:58 PM	AC	1 : 1		174	-	174	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	709.2-2	12/23/2021 1:18:07 PM	AC	1 : 1		12	-	12	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	711.1-1	12/23/2021 1:18:18 PM	AC	1 : 1		45	-	45	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	711.1-2	12/23/2021 1:18:24 PM	AC	1 : 1		2	-	2	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	712.1-1	12/23/2021 1:18:34 PM	AC	1 : 1		175	-	175	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	712.1-2	12/23/2021 1:18:41 PM	AC	1 : 1		27	-	27	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	713.1-1	12/23/2021 1:19:45 PM	AC	1 : 1		43	-	43	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	713.1-2	12/23/2021 1:19:58 PM	AC	1 : 1		13	-	13	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	714.1-1	12/23/2021 1:20:12 PM	AC	1 : 1		259	-	259	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	714.1-2	12/23/2021 1:20:21 PM	AC	1 : 1		53	-	53	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	715.1-1	12/23/2021 1:20:32 PM	AC	1 : 1		42	-	42	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	715.1-2	12/23/2021 1:20:38 PM	AC	1 : 1		5	-	5	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	716.1-1	12/23/2021 1:20:48 PM	AC	1 : 1		149	-	149	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	716.1-2	12/23/2021 1:20:54 PM	AC	1 : 1		24	-	24	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	717.1-1	12/23/2021 1:21:06 PM	AC	1 : 1		14	-	14	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	717.1-2	12/23/2021 1:21:13 PM	AC	1 : 1		1	-	1	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	723.1-1	12/23/2021 1:21:21 PM	AC	1 : 1		27	-	27	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	723.1-2	12/23/2021 1:21:26 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	726.2-1	12/23/2021 1:21:39 PM	AC	1 : 1		153	-	153	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	726.2-2	12/23/2021 1:21:46 PM	AC	1 : 1		23	-	23	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	727.1-1	12/23/2021 1:21:56 PM	AC	1 : 1		51	-	51	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	727.1-2	12/23/2021 1:22:03 PM	AC	1 : 1		7	-	7	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	728.1-1	12/23/2021 1:22:16 PM	AC	1 : 1		999	-	-	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	728.1-2	12/23/2021 1:22:25 PM	AC	1 : 1		999	-	-	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	745.1-1	12/23/2021 1:22:35 PM	AC	1 : 1		21	-	21	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	745.1-2	12/23/2021 1:22:43 PM	AC	1 : 1		6	-	6	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	746.1-1	12/23/2021 1:26:06 PM	AC	1 : 1		596	-	596	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	746.1-2	12/23/2021 1:26:17 PM	AC	1 : 1		95	-	95	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	747.1-1	12/23/2021 1:26:27 PM	AC	1 : 1		23	-	23	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	747.1-2	12/23/2021 1:26:33 PM	AC	1 : 1		5	-	5	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	748.1-1	12/23/2021 1:26:43 PM	AC	1 : 1		27	-	27	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	748.1-2	12/23/2021 1:26:48 PM	AC	1 : 1		4	-	4	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	749.1-1	12/23/2021 1:26:57 PM	AC	1 : 1		259	-	259	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	749.1-2	12/23/2021 1:27:01 PM	AC	1 : 1		31	-	31	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	750.1-1	12/23/2021 1:27:10 PM	AC	1 : 1		50	-	50	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	750.1-2	12/23/2021 1:27:15 PM	AC	1 : 1		999	-	-	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	751.1-1	12/23/2021 1:27:22 PM	AC	1 : 1		311	-	311	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	751.1-2	12/23/2021 1:27:27 PM	AC	1 : 1		46	-	46	-	-	-	-	-	-	-	-	-	
+SYSTEM ADMINISTRATOR	751.1-2	12/23/2021 1:29:52 PM	AC	1 : 1		999	-	-	-	-	-	-	-	-	-	-	-	
