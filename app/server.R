@@ -232,9 +232,10 @@ server <- function(input, output, session) {
       
       # Run args to calcfu scripts
       # TODO: Add weighed and other widgets
-      cmd <- c("-i", t_i_path, "-o", t_o_path, 
+      cmd <- c("../calcfu/read_r_auto.py",
+	       "-i", t_i_path, "-o", t_o_path, 
                "-g", rv$opt_grp, "-gn", rv$opt_grp_n, 
-               "-d", rv$opt_dils)
+               "-d", sprintf('"%s"', rv$opt_dils))
       res <- system2("python3", args = cmd, stdout = TRUE)
   
       # cmd <- c("calc_auto.sh", t_i_path, t_o_path, "False", rv$opt_grp, rv$opt_grp_n, rv$opt_dils)
@@ -275,7 +276,7 @@ server <- function(input, output, session) {
     write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
     
     # Run sh script to py calcfu scripts
-    cmd <- c("-i", t_i_path, "-o", t_o_path)
+    cmd <- c("../calcfu/read_r_man.py", "-i", t_i_path, "-o", t_o_path)
     res <- system2("python3", args = cmd, stdout = TRUE)
     
     # cmd <- c("calc_man.sh", t_i_path, t_o_path)
