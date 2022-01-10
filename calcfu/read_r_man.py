@@ -3,14 +3,13 @@ import argparse
 import pandas as pd
 from calculator import CalCFU
 from plate import Plate
-from read_3m import split_given_size
+from utils import split_given_size 
 
 
 def r_man_results(input_path, output_path):
     """
-  
-  
-  """
+    
+    """
     df = pd.read_csv(input_path)
     # Convert columns to correct datatype.
     df = df.astype({"Count": int, "Dilution": int, "NumberPlates": int})

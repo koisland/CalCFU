@@ -8,49 +8,50 @@ import numpy as np
 from calculator import CalCFU
 from plate import Plate
 from exceptions import CalCFUError, PlateError
-from read_3m import split_given_size
+from utils import split_given_size
 
 logger = logging.getLogger(__name__)
 
-def r_auto_results(input_path, output_path, weighed, group, group_n, dils):
-    """
 
-    """
+def load_3m_csv(input_path):
     df = pd.read_csv(input_path)
+    
     # r read csv replaces space with .
     df.columns = df.columns.str.replace(".", " ", regex = False)
     
-    # replace mult nondigit chars with NA, convert cnts to int, and AC plate type to PAC
-    df["Red Raw Count"] = df["Red Raw Count"].str.replace("\D+", "", regex = True)
-    df["Red Raw Count"] = pd.to_numeric(df["Red Raw Count"], errors ='raise').fillna(0).astype('int')
+    # Get all columns that contain "Count".
+    count_cols = df.loc[:, df.columns.str.contains('Count')]
+    
+    # Replace mult nondigit chars and convert cnts to int.
+    count_cols = count_cols.replace("\D+", "", regex = True)
+    count_cols = count_cols.apply(pd.to_numeric, errors ='raise').fillna(0).astype('int')
+    
+    # Set df "Count" columns to modified columns.
+    df.loc[:, df.columns.str.contains('Count')] = count_cols
+    
+    # Replace AC with PAC for plate type.
     df["Plate Type"] = df["Plate Type"].str.replace("^AC$", "PAC", regex = True)
+    
+    # Remove rows with x in Sample ID or plate type is ve (verification)
+    df = df.loc[(df["Sample ID"] != "x") & (df["Plate Type"] != "VE")]
+    
+    return df
 
-    # TODO: For now, just stick to red raw count since PAC is only plate approved.
-    df = df[["DateTime", "Sample ID", "Red Raw Count", "Dilution", "Plate Type"]]
-
+def create_3m_groups(groups, weighed, group_n, plt_type, dils):
+    # TODO: If dils == None
+    if dils != "None":
+        # strip ', replace 1:1 with 0 and split str
+        dils = dils.strip("'").replace("1:1", "0").split("/")
+        dils = [int(dil) for dil in dils]
+    else:
+        dils = [-2, -3]
+        
+    if plt_type != "None":
+        pass
+    
     plt_groups = []
     plt_groups_ids = []
     
-    # replace 1:1 with 0 and split str
-    dils = [int(dil) for dil in dils.replace("1:1", "0").split(" / ")]
-
-    if group == "id":
-        # Group by matching ID
-        df = df.assign(abbrID=df["Sample ID"].str.split("-").str[0],
-                       pltNum=df["Sample ID"].str.split("-").str[1])
-                       
-        # ID Must be numeric. Otherwise, ignored.
-        uniq_ids = pd.to_numeric(df.abbrID, errors="coerce").unique()
-        ids = uniq_ids[~np.isnan(uniq_ids)]
-
-        # split into groups by unique ids
-        groups = [df[df.abbrID == str(i)] for i in ids]
-
-    else:  # by num
-        # remove verification obs.
-        df = df[df["Plate Type"] != "VE"]
-        groups = split_given_size(df, int(group_n))
-
     for group in groups:
         plt_group = []
         plt_group_ids = []
@@ -72,9 +73,33 @@ def r_auto_results(input_path, output_path, weighed, group, group_n, dils):
         # add groups to plates groups and plate id groups
         plt_groups.append(plt_group)
         plt_groups_ids.append(plt_group_ids)
+        
+    return plt_groups, plt_groups_ids
     
+def r_auto_results(input_path, output_path, weighed, group_n, plt_type, dils):
+    """
+
+    """
+    df = load_3m_csv(input_path)
+
+    if int(group_n) == 0:
+        # Group by matching ID
+        df = df.assign(abbrID=df["Sample ID"].str.split("-").str[0],
+                       pltNum=df["Sample ID"].str.split("-").str[1])
+                       
+        ids = df.abbrID.dropna().unique()
+       
+        # TODO: sort based on pltNum
+        # split into groups by unique ids
+        groups = [df[df.abbrID == i] for i in ids]
+        
+    else:  # by num
+        groups = split_given_size(df, int(group_n))
+
+
+    plt_groups, plt_groups_ids = create_3m_groups(groups, weighed, group_n, plt_type, dils)
     
-    cfus = [CalCFU(grp).calculate() for grp in plt_groups]
+    cfus = [CalCFU(grp, grp_ids).calculate() for grp, grp_ids in zip(plt_groups, plt_groups_ids)]
     cnts = [[plt.count for plt in grp] for grp in plt_groups]
     
     # Construct result df and save as csv
@@ -89,9 +114,9 @@ def main():
     ap.add_argument("--input", "-i", required=True, help="Input path.")
     ap.add_argument("--output", "-o", required=True, help="Output path.")
     ap.add_argument("--weighed", "-w", action="store_true", help="Weighed plate?")
-    ap.add_argument("--group", "-g", default="id", help="Group by num or id.")
-    ap.add_argument("--group_n", "-gn", default = 2, help="Number to group by (If -g provided).")
-    ap.add_argument("--dilution", "-d", default = "-2 / -3", help="Dilution group.")
+    ap.add_argument("--group_n", "-g", default = 0, help="Number to group by (0 for id).")
+    ap.add_argument("--plate", "-p", default = "None", help="Plate type (None to use recorded vals).")
+    ap.add_argument("--dilution", "-d", default = "None", help="Dilution group (None to use recorded vals).")
     args = vars(ap.parse_args()).values()
     try:
         out = r_auto_results(*args)

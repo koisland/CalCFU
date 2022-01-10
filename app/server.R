@@ -1,86 +1,98 @@
-# track_usage(storage_mode = store_json(path = "/root/logs/"))
-
-process_data <- function(df, input) {
-  # find date column.
-  date_col_ind <-startsWith(names(df), "Date")
-  date_col_name <- names(df)[date_col_ind]
-  
-  if (length(date_col_name) != 0) {
-    dt_df <- df %>%
-      # rename column to remove unwanted chrs
-      rename(c("DateTime" = date_col_name[1] )) %>%
-      # convert string to datetime
-      summarise(across(everything()), 
-                DateTime = as.Date(DateTime, "%m/%d/%Y %H:%M:%S %p")) %>%
-      # filter based on provided dates in input
-      filter(between(DateTime, input$dates[1], input$dates[2]))
-      # # add id col
-      # mutate(ID = row_number(), .before=1)
-    return(dt_df) 
-    
-  } else {
-    stop(safeError("Missing or Renamed Date Column"))
-  }
-}
-
-read_data <- function(input) {
-  # when reading semicolon separated files,
-  # having a comma separator causes `read.csv` to error
-  tryCatch(
-    {
-      df <- read.csv(input$file$datapath,
-                     header = input$header,
-                     sep = input$sep)
-      
-      if (!isTRUE(input$header)) {
-        # if no header, add colnames. can't do if header, cause might erase data.
-        column_names <- readLines("../data/3M_colnames.txt")
-        
-        # check if column names same length as df.
-        if (length(column_names) == length(names(df))) {
-          names(df) <- column_names
-        } else {
-          stop(safeError("One or multiple columns are missing."))
-        }
-      }
-      
-      return(df)
-    },
-    error = function(e) {
-      # if file header left in results.
-      if (e$message == "more columns than column names") {
-        og_df <- read.csv(input$file$datapath,
-                          header = FALSE,
-                          sep = input$sep)
-        
-        # slice out 1st row containing header
-        edited_df <- slice(og_df, 3:n())
-        
-        # make first row of initial df the column names
-        names(edited_df) <- og_df[2,]
-        
-        return(edited_df)
-      } 
-      else {
-        # return a safeError if a parsing error occurs
-        stop(safeError(e))
-      }
-    }
-  )
-  
-}
-
+# setup sweet alerts
+useSweetAlert()
 
 server <- function(input, output, session) {
   
   rv <- reactiveValues(
     res_man_df = NULL,
-    res_auto_df = NULL,
-    opt_msg = "",
-    opt_dils = "-2 / -3",
-    opt_grp = "id",
-    opt_grp_n = "2"
+    res_auto_df = NULL
   )
+  
+  stop_alert <- function(msg, title, msg_type = "error") {
+    sendSweetAlert(
+      session = session,
+      title = paste0(stringr::str_to_title(msg_type), ": ", title),
+      text = msg,
+      type = msg_type)
+    shiny:::reactiveStop()
+  }
+  
+  process_data <- function(df, input) {
+    # find date column.
+    date_col_ind <-startsWith(names(df), "Date")
+    date_col_name <- names(df)[date_col_ind]
+    
+    if (length(date_col_name) != 0) {
+      dt_df <- df %>%
+        # rename column to remove unwanted chrs
+        rename(c("DateTime" = date_col_name[1])) %>%
+        # filter based on provided dates in input
+        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), 
+                                                                      "%Y-%m-%d %I:%M:%S %p") 
+               & strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), 
+                                                                        "%Y-%m-%d %I:%M:%S %p")) %>%
+        mutate(Dilution = case_when(Dilution == "1 : 1" ~ "1:1",
+                                    Dilution == "1 : 10" ~ "-1",
+                                    Dilution == "1 : 100" ~ "-2", 
+                                    Dilution == "1 : 1000" ~ "-3",
+                                    Dilution == "1 : 10000" ~ "-4"))
+                         
+                                               
+                                             
+      return(dt_df) 
+      
+    } else {
+      stop_alert("Missing or Renamed Date Column.", "Invalid Columns")
+    }
+  }
+  
+  read_data <- function(input) {
+    # when reading semicolon separated files,
+    # having a comma separator causes `read.csv` to error
+    tryCatch(
+      {
+        df <- read.csv(input$file$datapath,
+                       header = input$header,
+                       sep = input$sep)
+        
+        if (!isTRUE(input$header)) {
+          # if no header, add colnames. can't do if header, cause might erase data.
+          column_names <- readLines("../data/3M_colnames.txt")
+          
+          # TODO: Add column validation.
+          # check if column names same length as df.
+          if (length(column_names) == length(names(df))) {
+            names(df) <- column_names
+          } else {
+            stop_alert("One or multiple columns are missing.", "Invalid Columns")
+          }
+        }
+        
+        return(df)
+      },
+      error = function(e) {
+        # if file header left in results.
+        if (e$message == "more columns than column names") {
+          og_df <- read.csv(input$file$datapath,
+                            header = FALSE,
+                            sep = input$sep)
+          
+          # slice out 1st row containing header
+          edited_df <- slice(og_df, 3:n())
+          
+          # make first row of initial df the column names
+          names(edited_df) <- og_df[2,]
+          
+          return(edited_df)
+        } 
+        else {
+          # return a safeError if a parsing error occurs
+          stop_alert("Incorrect separator.", "Read Failure")
+        }
+      }
+    )
+    
+  }
   
   # Initialize df w/inputs for manual entry.
   init_man_df <- function (num) {
@@ -125,11 +137,20 @@ server <- function(input, output, session) {
   
   # File uploaded.
   upl_data <- reactive({
-    # validates dates
-    validate(need(!is.na(input$dates[1]) & !is.na(input$dates[2]), 
-                  "Error: Please provide both a start and an end date."))
-    validate(need(input$dates[1] <= input$dates[2], 
-                  "Error: Start date should be earlier than end date."))
+    err = FALSE
+    msg = "None"
+    
+    if (is.na(input$dates[1]) | is.na(input$dates[2])) {
+      err = TRUE
+      msg = "Please provide both a start and an end date."
+    } else if (input$dates[1] > input$dates[2]) {
+      err = TRUE
+      msg = "Start date should be earlier than end date."
+    }
+    
+    if (isTRUE(err)) {
+      stop_alert(msg, "Invalid Date", msg_type = "warning")
+    }
     
     df <- read_data(input) %>% process_data(input)
     return(df)
@@ -159,53 +180,40 @@ server <- function(input, output, session) {
   # on cell edit, replace value, and replace datatable.
   observeEvent(input$auto_input_cell_edit, {
     info <- input$auto_input_cell_edit
-    
+    og_value <- rv$res_auto_df[info$row, info$col]
+
     # replace value in reactive values and coerce to whatever dtype in that pos
-    rv$res_auto_df[info$row, info$col] <- coerceValue(info$value, rv$res_auto_df[info$row, info$col])
-    
-    # replace DT and keep state of table 
-    replaceData(proxy_auto_input, rv$res_auto_df, resetPaging = FALSE)
+    tryCatch(
+      expr = {
+        rv$res_auto_df[info$row, info$col] <- coerceValue(info$value, rv$res_auto_df[info$row, info$col])
+        
+        # replace DT and keep state of table 
+        replaceData(proxy_auto_input, rv$res_auto_df, resetPaging = FALSE)
+      },
+      error = function(e){ 
+        msg = sprintf("Invalid value entered (%s [%s, %s])", 
+                      info$value, info$row, info$col)
+        stop_alert(msg, "Invalid Value")
+      }
+    )
   })
   
   # set options msgs and enable or disable inputs.
   observeEvent(input$options, {
-    if (length(input$options) == 2) {
-      rv$opt_msg <- "Set both grouping and dilutions below."
-      rv$opt_grp <- "num"
-      enable("opt_grp_n")
-      enable("opt_dils")
-    } else if ("Allow no ID? (Group by #)" %in% input$options) {
-      rv$opt_msg <- "Set number per grouping below."
-      rv$opt_grp <- "num"
-      enable("opt_grp_n")
-      disable("opt_dils")
-    } else if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
-      rv$opt_msg <- "Set dilution below."
-      enable("opt_dils")
-      disable("opt_grp_n")
-    } else {
-      rv$opt_msg <- ""
-      rv$opt_grp <- "id"
-      disable("opt_dils")
-      disable("opt_grp_n")
-    }
-    # Will not trigger event for checkbox if NULL ignored.
+    option_key <- 
+      list("Allow no ID? (Group by #)" = "opt_grp_n",
+           "Allow different dilutions? (Set dilutions)" = "opt_dils",
+           "Allow different plate types? (Set plate type)" = "opt_plt")
+    
+    # disable all inputs
+    lapply(option_key, 
+           function(x) disable(x))
+    
+    # enable selected inputs
+    lapply(input$options, 
+           function(x) enable(option_key[x][[1]]))
+
   }, ignoreNULL = FALSE)
-  
-  
-  # Store options.
-  observeEvent(input$opt_dils, {
-    rv$opt_dils <- input$opt_dils
-  })
-  
-  observeEvent(input$opt_grp_n, {
-    rv$opt_grp_n <- input$opt_grp_n
-  })
-  
-  # Display options msg.
-  output$options_msg <- renderText({
-    return(rv$opt_msg)
-  })
   
   output$auto_input <- renderDT(
     options = list(scrollX = TRUE),
@@ -220,6 +228,51 @@ server <- function(input, output, session) {
     }
   )
   
+  exec_cmd <- function(i_path, o_path, shiny_input, type = "sh") {
+    if (type == "sh") {
+      cmd <- c("calc_auto.sh", i_path, o_path)
+      if ("Weighed?" %in% input$options) {
+        cmd <- append(cmd, "True")
+      } else {
+        cmd <- append(cmd, "False")
+      }
+      if ("Allow no ID? (Group by #)" %in% input$options) {
+        cmd <- append(cmd, as.character(input$opt_grp_n))
+      } else {
+        cmd <- append(cmd, "0")
+      }
+      # These default to "None" in argparse py script if condition not met.
+      if ("Allow different plate types? (Set plate type)" %in% input$options) {
+        cmd <- append(cmd, input$opt_plt)
+      } else {
+        cmd <- append(cmd, "None")
+      }
+      if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
+        cmd <- append(cmd, input$opt_dils)
+      } else {
+        cmd <- append(cmd, "None")
+      }
+
+    } else {
+      cmd <- c(" ../calcfu/read_r_auto.py", "-i", i_path, "-o", o_path)
+
+      if ("Weighed?" %in% input$options) {
+        cmd <- append(cmd, "-w")
+      }
+      if ("Allow no ID? (Group by #)" %in% input$options) {
+        cmd <- append(cmd, paste("-g", input$opt_grp_n))
+      }
+      # These default to "None" in argparse py script if condition not met.
+      if ("Allow different plate types? (Set plate type)" %in% input$options) {
+        cmd <- append(cmd, paste("-p", input$opt_plt))
+      }
+      if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
+        cmd <- append(cmd, paste("-d", input$opt_dils))
+      }
+    }
+    
+    return(cmd)
+  }
   output$auto_results <- renderDataTable(
     options = list(scrollX = TRUE),
     {
@@ -229,22 +282,18 @@ server <- function(input, output, session) {
       
       # write manual df to disk as csv
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
-      
+
       # Run args to calcfu scripts
-      # TODO: Add weighed and other widgets
-      cmd <- c("-i", t_i_path, "-o", t_o_path, 
-               "-g", rv$opt_grp, "-gn", rv$opt_grp_n, 
-               "-d", rv$opt_dils)
-      res <- system2("python3", args = cmd, stdout = TRUE)
-  
-      # cmd <- c("calc_auto.sh", t_i_path, t_o_path, "False", rv$opt_grp, rv$opt_grp_n, rv$opt_dils)
-      # res <- system2("bash", args = cmd, stdout = TRUE)
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
+      
+      # res <- system2("python3", args = cmd, stdout = TRUE)
+      res <- system2("bash", args = cmd, stdout = TRUE)
       
       if (file.exists(t_o_path)){
         return(read.csv(t_o_path))
       } else {
         # if file doesn't exist, py script failed. output error.
-        stop(safeError(res))
+        stop_alert(res, "3M Script Failure")
       }
       
     }
@@ -275,14 +324,19 @@ server <- function(input, output, session) {
     write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
     
     # Run sh script to py calcfu scripts
-    cmd <- c("-i", t_i_path, "-o", t_o_path)
+    cmd <- c(" ../calcfu/read_r_auto.py",
+             "-i", t_i_path, "-o", t_o_path)
     res <- system2("python3", args = cmd, stdout = TRUE)
     
     # cmd <- c("calc_man.sh", t_i_path, t_o_path)
     # res <- system2("bash", args = cmd, stdout = TRUE)
-
-    return(read.csv(t_o_path))
     
+    if (file.exists(t_o_path)){
+      return(read.csv(t_o_path))
+    } else {
+      # if file doesn't exist, py script failed. output error.
+      stop_alert(res, title = "Manual Script Failure")
+    }
     
   })
 }

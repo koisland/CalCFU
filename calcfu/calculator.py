@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from typing import List
+from typing import List, Optional
 from functools import reduce
 from dataclasses import dataclass
 
@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True, order=True)
 class CalCFU(CalcConfig):
     plates: List
+    plate_ids: Optional[List] = None
 
     def __post_init__(self):
         # check if plate first and then if all samples were/were not weighed
         if not self.INPUT_VALIDATORS["plates"](self.plates, Plate):
-            raise CalCFUError("Invalid plate list. Not Plate instances, the same plate type, or there are <2 Plates.")
+            raise CalCFUError(f"Invalid plate list. Not Plate instances, the same plate type, or there are <2 Plates.\n{self.plate_ids}")
         if not self.INPUT_VALIDATORS["all_weighed"](self.plates):
-            raise CalCFUError("Invalid plate list. Must be all weighed or not all weighed.")
+            raise CalCFUError(f"Invalid plate list. Must be all weighed or not all weighed.\n{self.plate_ids}")
 
     @property
     def valid_plates(self):

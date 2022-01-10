@@ -1,3 +1,5 @@
+times <- strftime(seq(ISOdate(2000, 1, 1, hour = 8), by = "min", length.out = 541), format = "%I:%M:%S %p")
+
 ui <- fluidPage(
   # allow shiny js
   useShinyjs(),
@@ -10,7 +12,29 @@ ui <- fluidPage(
       title = "3M File",
       fluidRow(
         column(4, 
-               fileInput("file", "File")),
+               fileInput("file", "File"),
+               dropdown(label = "Options", size = "lg",
+                        br(),
+                        awesomeCheckboxGroup(
+                          inputId = "options",
+                          label = NULL, 
+                          choices = c("Weighed?", 
+                                      "Allow no ID? (Group by #)", 
+                                      "Allow different dilutions? (Set dilutions)",
+                                      "Allow different plate types? (Set plate type)"), 
+                          status = "warning"),
+                        
+                        # disable by default and enable based on options selected.
+                        shinyjs::disabled(numericInput("opt_grp_n", "Number per Group", 
+                                                       min=2, value = 2)),
+                        shinyjs::disabled(selectInput("opt_dils", "Dilutions", 
+                                                      choices = c("1:1/-1", "-1/-2", 
+                                                                  "-2/-3", "-3/-4"),
+                                                      selected = "-2/-3")),
+                        shinyjs::disabled(selectInput("opt_plt", "Plate Types", 
+                                                      choices = c("PAC", "RAC", "PCC"),
+                                                      selected = "PAC"))
+               )),
         
         column(4, 
                # Input: Select separator ----
@@ -27,24 +51,12 @@ ui <- fluidPage(
         column(4, 
                dateRangeInput("dates", "Date Range", 
                               min = "2000-01-01"),
-               dropdown(label = "Options",size = "lg",
-                        awesomeCheckboxGroup(
-                          inputId = "options",
-                          label = "", 
-                          choices = c("Allow no ID? (Group by #)", 
-                                      "Allow different dilutions? (Set dilutions)"), 
-                          status = "warning"),
-                        
-                        textOutput("options_msg"),
-                        
-                        # disable by default and enable based on options selected.
-                        shinyjs::disabled(numericInput("opt_grp_n", "Number per Group", 
-                                                       min=2, value = 2)),
-                        shinyjs::disabled(selectInput("opt_dils", "Dilutions", 
-                                                      choices = c("1:1 / -1", "-1 / -2", 
-                                                                  "-2 / -3", "-3 / -4"),
-                                                      selected = "-2 / -3"))
-               ))
+               sliderTextInput(
+                 inputId = "times",
+                 label = "Time Range", 
+                 choices = times,
+                 selected = c("08:00:00 AM", "05:00:00 PM")),
+               )
       ), 
       
       hr(),

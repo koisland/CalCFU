@@ -199,11 +199,16 @@ Arguments:
 * `plates` [ *list* ]
     * Contains Plate instances. 
     * Validated via `__post_init__` method.
+* `plate_ids` [ *list* ]
+    * **Optional**
+    * Contains list of plate IDs. 
+    * Used to identify incorrect plates in error message.
     
 ```python
 @dataclass(frozen=True, order=True)
 class CalCFU(CalcConfig):
     plates: List
+    plate_ids: Optional[List] = None
 ```
 
 ### Properties
@@ -287,6 +292,7 @@ Arguments:
     * Same as `calculate`.    
 
 Procedure:
+
 1. Reduce the `self.plates` down to one plate by checking adjacent plates' `hbound_abs_diff`. 
    * **The plate with the smallest difference is closest to the highest acceptable count bound.**
        * [NCIMS 2400a.16.h](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
@@ -320,33 +326,43 @@ Variables:
     * The sum of `dil_weights`. Part of the denominator of the weighted averaged.
 
 Procedure:
-1. First, sum counts from all valid plates (`plates_1` and `plates_2`).
 
-![](docs/figures/total.png)
-
+1. First, sum counts from all valid plates (`plates_1` and `plates_2`).<sup>1</sup>
 2. If all plates are the same dilution, set `div_factor` to the total number of valid plates.
-    * Each plate has equal weight in `div_dactor`.
+    * Each plate has equal weight in `div_factor`.
     * [NCIMS 2400a.16.l.1](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | 
       [NCIMS 2400a-4.17.e](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
-3. Otherwise, we will take a weighted average taking into account how each dilution contributes to the ```div_factor```.
-
-![](docs/figures/div_factor.png)
-
+3. Otherwise, we will take a weighted average taking into account how each dilution contributes to the ```div_factor```.<sup>2</sup>
 4. Each dilution will have a *weight* of how much it contributes to the total count (via the ```div_factor```)
     * If the plate dilution is the ```main_dil```, set the dilution's weight to 1. 
         * **This value is the ```main_dil```'s weight towards the total count.** 
         * The least diluted plate contributes the largest number of colonies 
-          to the overall count. It will always be 1 serves to normalize the effect of the other dilutions.
+          to the overall count. It will always be 1 and serves to normalize the effect of the other dilutions.
         * [NCIMS 2400a.16.l.1](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) |
           [NCIMS 2400a-4.17.e](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
     * If it is not, subtract the absolute value of ```main_dil``` by the absolute value of ```plate.dilution```.
         * By raising 10 to the power of ```abs_diff_dil```, **the plate dilution's weight - relative to ```main_dil``` - is calculated.** 
 5. Each dilution weight is then multiplied by the number of plates used for that dilution. 
 6. The sum of all dilution weights in ```dil_weights``` is the division weight, ```div_factor```.
-7. Dividing the ```total``` by the product of ```div_factor``` and ```main_dil``` yields the adjusted count.
-   
-![](docs/figures/adj_count.png)
+7. Dividing the ```total``` by the product of ```div_factor``` and ```main_dil``` yields the adjusted count.<sup>3</sup>
 
+| ![](docs/figures/total.png) | 
+|:--:| 
+| *Figure 1. Sum of counts from all valid plates (Step 2)* |
+
+<br>
+
+| ![](docs/figures/div_factor.png) | 
+|:--:| 
+| *Figure 2. Weighted average formula. (Step 3)* |
+
+<br>
+
+| ![](docs/figures/adj_count.png) | 
+|:--:| 
+| *Figure 3. Adjusted count formula. (Step 7)* |
+
+<br>
 
 ```python
 def _calc_multi_dil_valid(self):
