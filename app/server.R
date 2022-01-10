@@ -324,8 +324,7 @@ server <- function(input, output, session) {
     write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
     
     # Run sh script to py calcfu scripts
-    cmd <- c(" ../calcfu/read_r_auto.py",
-             "-i", t_i_path, "-o", t_o_path)
+    cmd <- c("../calcfu/read_r_man.py", "-i", t_i_path, "-o", t_o_path)
     res <- system2("python3", args = cmd, stdout = TRUE)
     
     # cmd <- c("calc_man.sh", t_i_path, t_o_path)
