@@ -7,9 +7,9 @@ conda activate calcfu
 
 # if weighed, include -w flag
 if [[ $3 == "True" ]]; then
-  res=$(python3 ../calcfu/read_r_auto.py -i $1 -o $2 -w -g $4 -p $5 -d "'$6'")
+  res=$(python3 ../calcfu/read_r_auto.py -i $1 -o $2 -w -g $4 -p $5 -d $6)
   echo $res
 elif [[ $3 == "False" ]]; then
-  res=$(python3 ../calcfu/read_r_auto.py -i $1 -o $2 -g $4 -p $5 -d "'$6'")
+  res=$(python3 ../calcfu/read_r_auto.py -i $1 -o $2 -g $4 -p $5 -d $6)
   echo $res
 fi

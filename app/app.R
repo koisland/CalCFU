@@ -5,7 +5,6 @@ library(DT)
 library(shinyWidgets)
 library(shinycssloaders)
 library(shinyjs)
-library(shinylogs)
 
 source("ui.R")
 

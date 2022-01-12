@@ -27,12 +27,9 @@ server <- function(input, output, session) {
         # rename column to remove unwanted chrs
         rename(c("DateTime" = date_col_name[1])) %>%
         
-        #TODO: Bug with input$dates/times[2]
-        # filter based on provided dates in input
-        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), 
-                                                                      "%Y-%m-%d %I:%M:%S %p") 
-               & strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), 
-                                                                        "%Y-%m-%d %I:%M:%S %p")) %>%
+        # filter based on provided dates and timesin input
+        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), "%Y-%m-%d %I:%M:%S %p")) %>%
+        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), "%Y-%m-%d %I:%M:%S %p")) %>%
         # Replace dilutions with easier to read formats.
         mutate(Dilution = case_when(Dilution == "1 : 1" ~ "1:1",
                                     Dilution == "1 : 10" ~ "-1",
@@ -276,7 +273,8 @@ server <- function(input, output, session) {
         cmd <- append(cmd, "None")
       }
       if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
-        cmd <- append(cmd, input$opt_dils)
+        dilutions <- paste(unlist(strsplit(input$opt_dils, "/")), collapse = " ")
+        cmd <- append(cmd, dilutions)
       } else {
         cmd <- append(cmd, "None")
       }
@@ -296,7 +294,8 @@ server <- function(input, output, session) {
       }
 
       if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
-        cmd <- append(cmd, sprintf('-d "%s"', input$opt_dils))
+        dilutions <- paste(unlist(strsplit(input$opt_dils, "/")), collapse = " ")
+        cmd <- append(cmd, paste('-d', dilutions))
       }
     }
     
@@ -313,8 +312,8 @@ server <- function(input, output, session) {
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
 
       # Run args to calcfu scripts
-      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py")
-      
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
+
       res <- system2("python3", args = cmd, stdout = TRUE)
       # res <- system2("bash", args = cmd, stdout = TRUE)
       

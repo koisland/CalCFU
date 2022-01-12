@@ -27,7 +27,7 @@ def load_3m_csv(input_path):
     :param input_path: Input path to 3M results csv.
     :return: pd.DataFrame with cleaned and filtered results.
     """
-    df = pd.read_csv(input_path)
+    df = pd.read_csv(input_path, dtype = str)
     
     # Remove rows with x in Sample ID or plate type is ve (verification)
     df = df.loc[(df["Sample ID"] != "x") & (df["Plate Type"] != "VE")]
@@ -40,7 +40,7 @@ def load_3m_csv(input_path):
     
     # Get all columns that contain "Count".
     count_cols = df.loc[:, df.columns.str.contains('Count')].replace("-", "0")
-    
+
     # Convert cnts to int raising error if cannot coerce.
     valid_counts = count_cols.apply(lambda x: x.str.isnumeric())
 
@@ -94,13 +94,7 @@ def create_3m_groups(groups: pd.DataFrame, weighed: bool, plt_type: str, dils: s
     :return:
     """
     
-    # strip ' needed for bash script
-    dils = dils.strip("'")
-    
-    if dils != "None":
-        # replace 1:1 with 0 and split str
-        dils = dils.replace("1:1", "0").split("/")
-        
+    if dils != ["None"]:
         dils = [int(dil) for dil in dils]
         
     plt_groups = []
@@ -122,7 +116,7 @@ def create_3m_groups(groups: pd.DataFrame, weighed: bool, plt_type: str, dils: s
 
             plt_obj = Plate(plate_type=(plt["Plate Type"] if plt_type == "None" else plt_type), 
                             count=get_3m_group_cnts(plt, plt_type),
-                            dilution=(plt["Dilution"] if dils == "None" else dil),
+                            dilution=(plt["Dilution"] if dils == ["None"] else dil),
                             weighed=weighed,
                             num_plts=1)
                 
@@ -148,7 +142,7 @@ def r_auto_results(input_path: str, output_path: str, weighed: bool, group_n: st
                        
         ids = df.abbrID.dropna().unique()
        
-        # split into groups by unique ids
+        # split into groups by unique ids and sort by plate number
         groups = [df[df.abbrID == i].sort_values(by="pltNum") for i in ids]
         
     else:  # by num
@@ -174,7 +168,7 @@ def main():
     ap.add_argument("--weighed", "-w", action="store_true", help="Weighed plate?")
     ap.add_argument("--group_n", "-g", default = 0, help="Number to group by (0 for id).")
     ap.add_argument("--plate", "-p", default = "None", help="Plate type (None to use recorded vals).")
-    ap.add_argument("--dilution", "-d", default = "None", help="Dilution group (None to use recorded vals).")
+    ap.add_argument("--dilution", "-d", default = "None", nargs = "*", help="Dilutions (None to use recorded vals).")
     args = vars(ap.parse_args()).values()
     try:
         out = r_auto_results(*args)
