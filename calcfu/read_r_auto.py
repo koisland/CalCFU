@@ -1,54 +1,108 @@
 import logging
 import pathlib
+import traceback
 import argparse
 import itertools
 import pandas as pd
 import numpy as np
 
+from calc_config import CalcConfig
 from calculator import CalCFU
 from plate import Plate
-from exceptions import CalCFUError, PlateError
+from exceptions import CalCFUError, PlateError, ReaderError
 from utils import split_given_size
 
 logger = logging.getLogger(__name__)
 
+# Colony count columns needed for result.
+PLT_COL_KEY = {"PAC" : ["Red Raw Count"], 
+               "RAC": ["Red Raw Count", "Blue Raw Count"], 
+               "PCC": ["Red with Gas Raw Count"]}
+    
 
 def load_3m_csv(input_path):
+    """
+    Load 3M results csv file.
+    Paired with R shiny app so columns (not values) are immutable.
+    :param input_path: Input path to 3M results csv.
+    :return: pd.DataFrame with cleaned and filtered results.
+    """
     df = pd.read_csv(input_path)
-    
-    # r read csv replaces space with .
-    df.columns = df.columns.str.replace(".", " ", regex = False)
-    
-    # Get all columns that contain "Count".
-    count_cols = df.loc[:, df.columns.str.contains('Count')]
-    
-    # Replace mult nondigit chars and convert cnts to int.
-    count_cols = count_cols.replace("\D+", "", regex = True)
-    count_cols = count_cols.apply(pd.to_numeric, errors ='raise').fillna(0).astype('int')
-    
-    # Set df "Count" columns to modified columns.
-    df.loc[:, df.columns.str.contains('Count')] = count_cols
-    
-    # Replace AC with PAC for plate type.
-    df["Plate Type"] = df["Plate Type"].str.replace("^AC$", "PAC", regex = True)
     
     # Remove rows with x in Sample ID or plate type is ve (verification)
     df = df.loc[(df["Sample ID"] != "x") & (df["Plate Type"] != "VE")]
     
+    # Replace AC with PAC for plate type.
+    df["Plate Type"] = df["Plate Type"].str.replace("^AC$", "PAC", regex = True)
+    
+    # Replace "1:1" with "0" for calculation.
+    df["Dilution"] = df["Dilution"].str.replace("1:1", "0", regex = True)
+    
+    # Get all columns that contain "Count".
+    count_cols = df.loc[:, df.columns.str.contains('Count')].replace("-", "0")
+    
+    # Convert cnts to int raising error if cannot coerce.
+    valid_counts = count_cols.apply(lambda x: x.str.isnumeric())
+
+    if not np.ravel(valid_counts).all():
+        invalid_plt_ids = df[~valid_counts]["Sample ID"].values
+        raise ReaderError(f"{invalid_plt_ids} have invalid counts.")
+    else:
+        count_cols = count_cols.apply(pd.to_numeric, errors ='raise').astype('int')
+
+        # Set df "Count" columns to modified columns.
+        df.loc[:, df.columns.str.contains('Count')] = count_cols
+    
+    
+    # Validate plate type and dilution column
+    valid_plt_types = df["Plate Type"].isin(PLT_COL_KEY.keys())
+    valid_dils = df["Dilution"].isin(str(n) for n in CalcConfig.VALID_DILUTIONS)
+    
+    if not valid_plt_types.all():
+        invalid_plt_ids = df[~valid_plt_types]["Sample ID"].values
+        raise ReaderError(f"{invalid_plt_ids} have invalid plate types.")
+    if not valid_dils.all():
+        invalid_plt_ids = df[~valid_dils]["Sample ID"].values
+        raise ReaderError(f"{invalid_plt_ids} have invalid dilutions.")
+    else:
+        # If all in valid dilutions, safe to convert to int.
+        df["Dilution"] = df["Dilution"].astype('int')
+    
     return df
 
-def create_3m_groups(groups, weighed, group_n, plt_type, dils):
-    # TODO: If dils == None
-    if dils != "None":
-        # strip ', replace 1:1 with 0 and split str
-        dils = dils.strip("'").replace("1:1", "0").split("/")
-        dils = [int(dil) for dil in dils]
+def get_3m_group_cnts(plt: pd.DataFrame, plt_type: str):
+    """
+    Aggregate counts of single plate based on plate type.
+    :param plt: DataFrame row for single plate.
+    :param plt_type: Plate type. "None" (use col val) or one of allowed plate types.
+    :return:
+    """
+    if plt_type == "None":
+        cnt = plt.loc[PLT_COL_KEY[plt["Plate Type"]]].sum()
     else:
-        dils = [-2, -3]
-        
-    if plt_type != "None":
-        pass
+        cnt = plt.loc[PLT_COL_KEY[plt_type]].sum()
+    return cnt
     
+
+def create_3m_groups(groups: pd.DataFrame, weighed: bool, plt_type: str, dils: str):
+    """
+    Creates groups of Plate instances from a group of dataframes containing 3M plate results.
+    :param groups: Dataframe with 3M results.
+    :param weighed: Weighed sample?
+    :param plt_type: Plate type or "None"
+    :param dils: Dilutions in format ("'#/#'") or "None"
+    :return:
+    """
+    
+    # strip ' needed for bash script
+    dils = dils.strip("'")
+    
+    if dils != "None":
+        # replace 1:1 with 0 and split str
+        dils = dils.replace("1:1", "0").split("/")
+        
+        dils = [int(dil) for dil in dils]
+        
     plt_groups = []
     plt_groups_ids = []
     
@@ -56,14 +110,19 @@ def create_3m_groups(groups, weighed, group_n, plt_type, dils):
         plt_group = []
         plt_group_ids = []
         
-        # zip plate index and dilution cycling through dilutions if plates not multiple of two.
-        for i, dil in zip(range(group.shape[0]), itertools.cycle(dils)):
+        # Number of rows in group.
+        n_plates = group.shape[0]
+        
+        # Zip plate indices of group and dilutions, 
+        #   cycling through dilutions if number of plates not a multiple of dils.
+        # dil will be ignored if dils equal to "None".
+        for i, dil in zip(range(n_plates), itertools.cycle(dils)):
             # grab row in df
             plt = group.iloc[i]
 
-            plt_obj = Plate(plate_type=plt["Plate Type"], 
-                            count=plt["Red Raw Count"],
-                            dilution=dil,
+            plt_obj = Plate(plate_type=(plt["Plate Type"] if plt_type == "None" else plt_type), 
+                            count=get_3m_group_cnts(plt, plt_type),
+                            dilution=(plt["Dilution"] if dils == "None" else dil),
                             weighed=weighed,
                             num_plts=1)
                 
@@ -76,7 +135,7 @@ def create_3m_groups(groups, weighed, group_n, plt_type, dils):
         
     return plt_groups, plt_groups_ids
     
-def r_auto_results(input_path, output_path, weighed, group_n, plt_type, dils):
+def r_auto_results(input_path: str, output_path: str, weighed: bool, group_n: str, plt_type: str, dils: str):
     """
 
     """
@@ -89,15 +148,14 @@ def r_auto_results(input_path, output_path, weighed, group_n, plt_type, dils):
                        
         ids = df.abbrID.dropna().unique()
        
-        # TODO: sort based on pltNum
         # split into groups by unique ids
-        groups = [df[df.abbrID == i] for i in ids]
+        groups = [df[df.abbrID == i].sort_values(by="pltNum") for i in ids]
         
     else:  # by num
         groups = split_given_size(df, int(group_n))
 
 
-    plt_groups, plt_groups_ids = create_3m_groups(groups, weighed, group_n, plt_type, dils)
+    plt_groups, plt_groups_ids = create_3m_groups(groups, weighed, plt_type, dils)
     
     cfus = [CalCFU(grp, grp_ids).calculate() for grp, grp_ids in zip(plt_groups, plt_groups_ids)]
     cnts = [[plt.count for plt in grp] for grp in plt_groups]
@@ -121,9 +179,13 @@ def main():
     try:
         out = r_auto_results(*args)
         return out
-    except Exception as e:
-        # print to stdout for bash
+    # print to stdout for bash
+    except (ReaderError, CalCFUError, PlateError) as e:
+        # custom error.
         print(e)
+    except Exception as e:
+        
+        print(f"{traceback.format_exc(limit = 3)}")
 
 
 if __name__ == "__main__":

@@ -26,20 +26,48 @@ server <- function(input, output, session) {
       dt_df <- df %>%
         # rename column to remove unwanted chrs
         rename(c("DateTime" = date_col_name[1])) %>%
+        
+        #TODO: Bug with input$dates/times[2]
         # filter based on provided dates in input
         filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), 
                                                                       "%Y-%m-%d %I:%M:%S %p") 
                & strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), 
                                                                         "%Y-%m-%d %I:%M:%S %p")) %>%
+        # Replace dilutions with easier to read formats.
         mutate(Dilution = case_when(Dilution == "1 : 1" ~ "1:1",
                                     Dilution == "1 : 10" ~ "-1",
                                     Dilution == "1 : 100" ~ "-2", 
                                     Dilution == "1 : 1000" ~ "-3",
-                                    Dilution == "1 : 10000" ~ "-4"))
-                         
-                                               
-                                             
-      return(dt_df) 
+                                    Dilution == "1 : 10000" ~ "-4")) %>% 
+        
+        # Remove calculated column.
+        select(!contains("Calculated"))
+      
+      edit_cnts_df <- dt_df %>% 
+        select(contains("Edited")) %>% 
+        # Set values of "-" to NA
+        mutate(across(everything(), function(x) ifelse(x == "-", NA, x)))
+      
+      raw_cnts_df <- dt_df %>% 
+        select(contains("Raw"))
+      
+      # Set raw_cnts values that share loc with edit_cnts to edit_cnts values that aren't NA
+      raw_cnts_df[!is.na(edit_cnts_df)] <- edit_cnts_df[!is.na(edit_cnts_df)]                                         
+                               
+      adj_df <- dt_df %>% 
+        # Select everything but the count columns
+        select(!contains("Count")) %>%
+        # Add index to join by.
+        mutate(idx = row_number(), .before = 1) %>%
+        # Perform left join on raw_cnts_df with index added.
+        left_join(raw_cnts_df %>% mutate(idx = row_number(), .before = 1), by = "idx") %>%
+        # Remove "." in colnames.
+        rename_with(.cols = everything(), ~gsub("\\.", " ", .x)) %>%
+        # Deselect index.
+        select(-idx) %>%
+        relocate(Comment, .after = last_col())
+        
+      return(adj_df) 
       
     } else {
       stop_alert("Missing or Renamed Date Column.", "Invalid Columns")
@@ -228,9 +256,9 @@ server <- function(input, output, session) {
     }
   )
   
-  exec_cmd <- function(i_path, o_path, shiny_input, type = "sh") {
+  exec_cmd <- function(i_path, o_path, shiny_input, type = "sh", method = "auto") {
     if (type == "sh") {
-      cmd <- c("calc_auto.sh", i_path, o_path)
+      cmd <- c(sprintf("calc_%s.sh", method), i_path, o_path)
       if ("Weighed?" %in% input$options) {
         cmd <- append(cmd, "True")
       } else {
@@ -254,7 +282,7 @@ server <- function(input, output, session) {
       }
 
     } else {
-      cmd <- c(" ../calcfu/read_r_auto.py", "-i", i_path, "-o", o_path)
+      cmd <- c(sprintf("../calcfu/read_r_%s.py", method), "-i", i_path, "-o", o_path)
 
       if ("Weighed?" %in% input$options) {
         cmd <- append(cmd, "-w")
@@ -266,8 +294,9 @@ server <- function(input, output, session) {
       if ("Allow different plate types? (Set plate type)" %in% input$options) {
         cmd <- append(cmd, paste("-p", input$opt_plt))
       }
+
       if ("Allow different dilutions? (Set dilutions)" %in% input$options) {
-        cmd <- append(cmd, paste("-d", input$opt_dils))
+        cmd <- append(cmd, sprintf('-d "%s"', input$opt_dils))
       }
     }
     
@@ -284,10 +313,10 @@ server <- function(input, output, session) {
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
 
       # Run args to calcfu scripts
-      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py")
       
-      # res <- system2("python3", args = cmd, stdout = TRUE)
-      res <- system2("bash", args = cmd, stdout = TRUE)
+      res <- system2("python3", args = cmd, stdout = TRUE)
+      # res <- system2("bash", args = cmd, stdout = TRUE)
       
       if (file.exists(t_o_path)){
         return(read.csv(t_o_path))
@@ -324,10 +353,9 @@ server <- function(input, output, session) {
     write.csv(rv$res_man_df, t_i_path, row.names = FALSE)
     
     # Run sh script to py calcfu scripts
-    cmd <- c("../calcfu/read_r_man.py", "-i", t_i_path, "-o", t_o_path)
+    cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py", method = "man")
     res <- system2("python3", args = cmd, stdout = TRUE)
     
-    # cmd <- c("calc_man.sh", t_i_path, t_o_path)
     # res <- system2("bash", args = cmd, stdout = TRUE)
     
     if (file.exists(t_o_path)){

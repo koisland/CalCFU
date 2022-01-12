@@ -461,7 +461,7 @@ result = bank_round(value=24553, place_from_left=2)
     * `result=24000`
 ---
 
-### For full examples and tests, view [test_calc.py](test_calc.py)...
+### For full examples and tests, view [test_calc.py](https://github.com/koisland/CalCFU/blob/main/test_calc.py)...
 
 ---
 
