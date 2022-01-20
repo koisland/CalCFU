@@ -29,9 +29,6 @@ RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'renv::consent(provided = TRUE)'
 RUN Rscript -e 'renv::restore()'
 
-# install pkgs that aren't installed correctly in renv
-RUN Rscript -e 'install.packages("markdown")'
-
 # Expose port 
 EXPOSE 3838
 

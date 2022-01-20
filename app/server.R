@@ -277,7 +277,7 @@ server <- function(input, output, session) {
       }
 
     } else {
-      cmd <- c(sprintf("../read_r_%s.py", method), "-i", i_path, "-o", o_path)
+      cmd <- c(sprintf("../read_%s.py", method), "-i", i_path, "-o", o_path)
 
       if ("Weighed?" %in% input$options) {
         cmd <- append(cmd, "-w")

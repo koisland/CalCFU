@@ -425,24 +425,28 @@ Arguments:
 
 Procedure:
 
-1. Reduce the `self.plates` down to one plate by checking adjacent plates' `hbound_abs_diff`. 
+1. If all plates have same absolute diff, take plate with highest dilution.
+2. Otherwise, find plate with the lowest absolute difference between the hbound and value
    * **The plate with the smallest difference is closest to the highest acceptable count bound.**
        * [NCIMS 2400a.16.h](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
    * `Ex. |267 - 250| = 17 and |275 - 250| = 25` 
    * `17 < 25 so 267 is closer to 250 than 275.`
-2. Set throwaway variable `value` to `count` or `closest_bound` based on if reported count needed.
-3. Finally, return `sign` and multiply the closest bound by the reciprocal of the dilution.
+3. Set throwaway variable `value` to `count` or `closest_bound` based on if reported count needed.
+4. Finally, return `sign` and multiply the closest bound by the reciprocal of the dilution.
     * [NCIMS 2400a.16.l](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
     
 ``` python
-def _calc_no_dil_valid(self, report_count):     
-    # Use reduce to reduce plates to a single plate:
-    #   plate with the lowest absolute difference between the hbound and value
-    closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.hbound_abs_diff), self.plates)
+def _calc_no_dil_valid(self, report_count):
+    # If all plates have same absolute diff, take plate with highest dilution.
+    if all(plt.hbound_abs_diff == self.plates[0].hbound_abs_diff for plt in self.plates):
+        closest_to_hbound = min(self.plates, key=lambda x: x.dilution)
+    else:
+        # Find plate with the lowest absolute difference between the hbound and value
+        closest_to_hbound = min(self.plates, key=lambda x: x.hbound_abs_diff)
 
     # if reporting, use closest bound; otherwise, use count.
     value = closest_to_hbound.closest_bound if report_count else closest_to_hbound.count
-    
+
     return closest_to_hbound.sign, value * (10 ** abs(closest_to_hbound.dilution))
 ```
 
