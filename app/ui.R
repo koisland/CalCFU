@@ -1,8 +1,9 @@
-times <- strftime(seq(ISOdate(2000, 1, 1, hour = 8), by = "min", length.out = 541), format = "%I:%M:%S %p")
 
 ui <- fluidPage(
   # allow shiny js
   useShinyjs(),
+  # Use css
+  includeCSS("css/widgets.css"),
   navbarPage(
     theme = shinythemes::shinytheme("lumen"),
     
@@ -12,7 +13,7 @@ ui <- fluidPage(
       title = "3M File",
       fluidRow(
         column(4, 
-               fileInput("file", "File"),
+               fileInput("file", "File", accept = c(".csv", ".txt")),
                dropdown(label = "Options", size = "lg",
                         br(),
                         awesomeCheckboxGroup(

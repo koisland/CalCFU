@@ -22,53 +22,49 @@ server <- function(input, output, session) {
     date_col_ind <-startsWith(names(df), "Date")
     date_col_name <- names(df)[date_col_ind]
     
-    if (length(date_col_name) != 0) {
-      dt_df <- df %>%
-        # rename column to remove unwanted chrs
-        rename(c("DateTime" = date_col_name[1])) %>%
-        
-        # filter based on provided dates and timesin input
-        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), "%Y-%m-%d %I:%M:%S %p")) %>%
-        filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), "%Y-%m-%d %I:%M:%S %p")) %>%
-        # Replace dilutions with easier to read formats.
-        mutate(Dilution = case_when(Dilution == "1 : 1" ~ "1:1",
-                                    Dilution == "1 : 10" ~ "-1",
-                                    Dilution == "1 : 100" ~ "-2", 
-                                    Dilution == "1 : 1000" ~ "-3",
-                                    Dilution == "1 : 10000" ~ "-4")) %>% 
-        
-        # Remove calculated column.
-        select(!contains("Calculated"))
+    dt_df <- df %>%
+      # rename column to remove unwanted chrs
+      rename(c("DateTime" = date_col_name[1])) %>%
       
-      edit_cnts_df <- dt_df %>% 
-        select(contains("Edited")) %>% 
-        # Set values of "-" to NA
-        mutate(across(everything(), function(x) ifelse(x == "-", NA, x)))
+      # filter based on provided dates and timesin input
+      filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") >= strptime(paste(input$dates[1], input$times[1]), "%Y-%m-%d %I:%M:%S %p")) %>%
+      filter(strptime(DateTime, "%m/%d/%Y %I:%M:%S %p") <= strptime(paste(input$dates[2], input$times[2]), "%Y-%m-%d %I:%M:%S %p")) %>%
+      # Replace dilutions with easier to read formats.
+      mutate(Dilution = case_when(Dilution == "1 : 1" ~ "1:1",
+                                  Dilution == "1 : 10" ~ "-1",
+                                  Dilution == "1 : 100" ~ "-2", 
+                                  Dilution == "1 : 1000" ~ "-3",
+                                  Dilution == "1 : 10000" ~ "-4")) %>% 
       
-      raw_cnts_df <- dt_df %>% 
-        select(contains("Raw"))
+      # Remove calculated column.
+      select(!contains("Calculated"))
+    
+    edit_cnts_df <- dt_df %>% 
+      select(contains("Edited")) %>% 
+      # Set values of "-" to NA
+      mutate(across(everything(), function(x) ifelse(x == "-", NA, x)))
+    
+    raw_cnts_df <- dt_df %>% 
+      select(contains("Raw"))
+    
+    # Set raw_cnts values that share loc with edit_cnts to edit_cnts values that aren't NA
+    raw_cnts_df[!is.na(edit_cnts_df)] <- edit_cnts_df[!is.na(edit_cnts_df)]                                         
+                             
+    adj_df <- dt_df %>% 
+      # Select everything but the count columns
+      select(!contains("Count")) %>%
+      # Add index to join by.
+      mutate(idx = row_number(), .before = 1) %>%
+      # Perform left join on raw_cnts_df with index added.
+      left_join(raw_cnts_df %>% mutate(idx = row_number(), .before = 1), by = "idx") %>%
+      # Remove "." in colnames.
+      rename_with(.cols = everything(), ~gsub("\\.", " ", .x)) %>%
+      # Deselect index.
+      select(-idx) %>%
+      relocate(Comment, .after = last_col())
       
-      # Set raw_cnts values that share loc with edit_cnts to edit_cnts values that aren't NA
-      raw_cnts_df[!is.na(edit_cnts_df)] <- edit_cnts_df[!is.na(edit_cnts_df)]                                         
-                               
-      adj_df <- dt_df %>% 
-        # Select everything but the count columns
-        select(!contains("Count")) %>%
-        # Add index to join by.
-        mutate(idx = row_number(), .before = 1) %>%
-        # Perform left join on raw_cnts_df with index added.
-        left_join(raw_cnts_df %>% mutate(idx = row_number(), .before = 1), by = "idx") %>%
-        # Remove "." in colnames.
-        rename_with(.cols = everything(), ~gsub("\\.", " ", .x)) %>%
-        # Deselect index.
-        select(-idx) %>%
-        relocate(Comment, .after = last_col())
-        
-      return(adj_df) 
-      
-    } else {
-      stop_alert("Missing or Renamed Date Column.", "Invalid Columns")
-    }
+    return(adj_df) 
+
   }
   
   read_data <- function(input) {
@@ -82,11 +78,12 @@ server <- function(input, output, session) {
         
         if (!isTRUE(input$header)) {
           # if no header, add colnames. can't do if header, cause might erase data.
+          df_column_names <- gsub("\\.", " ", names(df))
           column_names <- readLines("../data/3M_colnames.txt")
           
           # TODO: Add column validation.
           # check if column names same length as df.
-          if (length(column_names) == length(names(df))) {
+          if (all(df_column_names == column_names)) {
             names(df) <- column_names
           } else {
             stop_alert("One or multiple columns are missing.", "Invalid Columns")
@@ -246,7 +243,7 @@ server <- function(input, output, session) {
     editable = TRUE, 
     {
       req(input$file)
-      df = upl_data()
+      df <- upl_data()
       # save df to reactive values
       rv$res_auto_df <- df
       return(df)
@@ -312,10 +309,8 @@ server <- function(input, output, session) {
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
 
       # Run args to calcfu scripts
-      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
-
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py")
       res <- system2("python3", args = cmd, stdout = TRUE)
-      # res <- system2("bash", args = cmd, stdout = TRUE)
       
       if (file.exists(t_o_path)){
         return(read.csv(t_o_path))

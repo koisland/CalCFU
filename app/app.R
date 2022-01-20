@@ -1,10 +1,4 @@
-library(shiny)
-library(shinythemes)
-library(dplyr)
-library(DT)
-library(shinyWidgets)
-library(shinycssloaders)
-library(shinyjs)
+source("global.R")
 
 source("ui.R")
 
