@@ -13,14 +13,14 @@ class TestCalc(unittest.TestCase):
         self.plt_3 = Plate("RAC", 12, -2, True, 1)
         self.plt_4 = Plate("RAC", 13, -1, True, 1)
 
-        self.plt_5 = Plate("CPC", 152, -2, True, 3)
-        self.plt_6 = Plate("CPC", 134, -1, True, 3)
-
-        self.plt_7 = Plate("HSCC", 81, 0, True, 1)
-        self.plt_8 = Plate("HSCC", 85, 0, True, 1)
-
-        self.plt_9 = Plate("SPC", 19, -2, False, 1)
-        self.plt_10 = Plate("SPC", 521, -1, False, 1)
+        self.plt_5 = Plate("SPC", 19, -3, False, 1)
+        self.plt_6 = Plate("SPC", 521, -2, False, 1)
+        
+        self.plt_7 = Plate("PAC", 0, -3, False, 1)
+        self.plt_8 = Plate("PAC", 0, -2, False, 1)
+        
+        self.plt_9 = Plate("PAC", 999, -3, False, 1)
+        self.plt_10 = Plate("PAC", 999, -2, False, 1)
 
     def test_create_plt(self):
         with self.assertRaises(PlateError):
@@ -78,23 +78,26 @@ class TestCalc(unittest.TestCase):
 
         # Plates 5 & 6
         self.calc_3 = CalCFU(plates=[self.plt_5, self.plt_6])
-        print(self.calc_3.calculate(report_count=False))
-        print(self.calc_3.calculate())
+        # Plate 5 (19) is closer to 250. 19 / 0.001 = 19000
+        self.assertEqual(self.calc_3.calculate(report_count=False), 19000)
+        self.assertEqual(self.calc_3.calculate(), "<25,000 eSPC / mL")
 
         # Plates 7 & 8
         self.calc_4 = CalCFU(plates=[self.plt_7, self.plt_8])
-        print(self.calc_4.calculate(report_count=False))
-        print(self.calc_4.calculate())
+        # Both Plate 7 (0) and Plate 8 (0) are below the countable range and are equidistant from 250. 
+        # Therefore, take lowest dilution plate, Plate 8. 0 / 0.01 = 0
+        self.assertEqual(self.calc_4.calculate(report_count=False), 0)
+        self.assertEqual(self.calc_4.calculate(), "<25,000 ePAC / mL")
 
         # Plates 9 & 10
         self.calc_5 = CalCFU(plates=[self.plt_9, self.plt_10])
-        print(self.calc_5.calculate(report_count=False))
-        print(self.calc_5.calculate())
-
+        # Both Plate 9 (0) and Plate 10 (0) are above the countable range and are equidistant from 250. 
+        # Therefore, take highest dilution plate, Plate 9. 999 / 0.001 = 999000
+        self.assertEqual(self.calc_5.calculate(report_count=False), 999000)
+        self.assertEqual(self.calc_5.calculate(), ">250,000 ePAC / mL")
+        
     def test_plate_operations(self):
-        test_1 = {"one": Plate("PAC", 12, -1, True, 1), "one_copy": Plate("PAC", 12, -1, True, 1)}
+        test_1 = {"one": Plate("PAC", 12, -1, True, 1), 
+                  "one_copy": Plate("PAC", 12, -1, True, 1)}
         self.assertTrue(test_1["one"] == test_1["one_copy"])
 
-
-if __name__ == "__main__":
-    unittest.main()

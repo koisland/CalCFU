@@ -1,7 +1,27 @@
 # CalCFU
 
 ---
-This Python script calculates reportable counts for plating methods outlined in the NCIMS 2400 using two custom classes.
+
+### Table of Contents
+* [Overview](#calcfu_overview)
+* [`Plate` Class](#plate_cls)
+  * [Fields](#plate_cls_fields)
+      * [Validation](#plate_cls_arg_val)
+  * [Class Variables](#plate_cls_vars)
+  * [Class Properties](#plate_cls_prop)
+* [`CalCFU` Class](#calcfu_cls)
+  * [Fields](#calcfu_cls_fields)
+  * [Class Properties](#calcfu_cls_prop)
+  * [Methods](#calcfu_cls_methods)
+      * [`calculate`](#calcfu_cls_calculate)
+      * [`calc_no_dil_valid`](#calcfu_cls_calc_no_valid)
+      * [`calc_mult_dil_valid`](#calcfu_cls_calc_mult_valid)
+      * [`bank_round`](#calcfu_cls_bank_round)
+      
+---
+
+## Overview <a name="calcfu_overview"></a> 
+These Python scripts calculate CFU counts for plating methods outlined in the NCIMS 2400 using two custom classes.
 * `Plate` for storing plate characteristics.
 * `CalCFU` for the calculator logic.
 
@@ -12,9 +32,8 @@ The code below outlines the entire process and references the NCIMS 2400s.
 * [NCIMS 2400a: SPC - Pour Plate (Oct 2013)](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf)
 * [NCIMS 2400a-4: SPC - Petrifilm (Nov 2017)](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf)
 
----
 
-## `Plate`
+## `Plate` <a name="plate_cls"></a>
 Plates are set up via the `Plate` dataclass.
 
 ```python
@@ -26,7 +45,7 @@ plates_1 = Plate(plate_type="PAC", count=234, dilution=-2, weighed=True, num_plt
 plates_2 = Plate(plate_type="PAC", count=53, dilution=-3, weighed=True, num_plts=1)
 ```
 
-### Fields
+### Fields <a name="plate_cls_fields"></a>
 Each instance of the dataclass is created with five arguments which are set as fields.
 
 Arguments:
@@ -52,7 +71,7 @@ class Plate(CalcConfig):
     num_plts: int = 1
 ```
 
-### Class Variables
+### Class Variables <a name="plate_cls_vars"></a>
 When an instance of the `Plate` or `CalCFU` class is created, it inherits from the `CalcConfig` class which stores
 all necessary configuration variables for the calculator.
 
@@ -112,8 +131,8 @@ class CalcConfig:
         "all_weighed": lambda plates: all(plates[0].weighed == plate.weighed for plate in plates)}
  ```
 
-### Argument Validation
-Arguments are validated via a `__post_init__` method where each key is checked 
+### Field Validation <a name="plate_cls_arg_val"></a>
+Arguments/fields are validated via a `__post_init__` method where each key is checked 
 against conditions in `self.INPUT_VALIDATORS`
 
 ```python
@@ -124,7 +143,7 @@ def __post_init__(self):
             "Invalid value. Check calc_config.py."
 ```
 
-### Properties
+### Properties <a name="plate_cls_prop"></a>
 Properties are also defined to allow for read-only calculation of attributes from the input arguments.
 
 ```python
@@ -174,14 +193,13 @@ def closest_bound(self):
     * Absolute differences of `count` and low and high `cnt_ranges`.
 * `hbound_abs_diff` [ *int* ]
     * Absolute difference of `count` and high of `cnt_range`.
-    * Used in 
 * `closest_bound` [ *int* ]
     * Closest count in `cnt_range` to `count`.
     * Based on minimum absolute difference between `count` and `cnt_range`s\. 
       The smaller the difference, the closer the `count` is to a bound.
 ---
 
-## `CalCFU`
+## `CalCFU` <a name="calcfu_cls"></a>
 The calculator is contained in the `CalCFU` dataclass.
 Using the previously created `Plate` instances, a `CalCFU` instance is created.
 
@@ -192,7 +210,7 @@ from calcfu.calculator import CalCFU
 calc = CalCFU(plates=[plates_1, plates_2])
 ```
 
-### Fields
+### Fields <a name="calcfu_cls_fields"></a>
 Each instance of CountCalculator is initialized with a list of the plates to be calculated:
 
 Arguments:
@@ -211,7 +229,7 @@ class CalCFU(CalcConfig):
     plate_ids: Optional[List] = None
 ```
 
-### Properties
+### Properties <a name="calcfu_cls_prop"></a>
 
 ```python
 @property
@@ -230,7 +248,7 @@ def reported_units(self):
     * Units based on plate type and if weighed.
     * Estimated letter added in `self.calculate()`
 
-### Methods
+### Methods <a name="calcfu_cls_methods"></a>
 
 ---
 
@@ -239,7 +257,7 @@ Two methods are available for use with the CountCalculator instance:
 * `bank_round`
 
 
-### `calculate(self)`
+### `calculate(self)` <a name="calcfu_cls_calculate"></a>
 
 This method is the "meat-and-potatoes" of the script. 
 It calculates the reported/adjusted count based on the plates given. 
@@ -284,7 +302,7 @@ def calculate(self, round_to=2, report_count=True):
 ```
 
 
-### `calc_no_dil_valid(self, report_count)`
+### `_calc_no_dil_valid(self, report_count)` <a name="calcfu_cls_calc_no_valid"></a>
 This function runs when *no plates have valid counts*.
 
 Arguments:
@@ -314,7 +332,7 @@ def _calc_no_dil_valid(self, report_count):
     return closest_to_hbound.sign, value * (10 ** abs(closest_to_hbound.dilution))
 ```
 
-### `calc_multi_dil_valid(self)`
+### `_calc_multi_dil_valid(self)` <a name="calcfu_cls_calc_mult_valid"></a>
 This method runs if *multiple plates have valid counts*.
 
 Variables:
@@ -390,7 +408,7 @@ def _calc_multi_dil_valid(self):
 
 ### Once a value is returned...
 
-### `bank_round(value, place_from_left)` 
+### `bank_round(value, place_from_left)` <a name="calcfu_cls_bank_round"></a>
 
 This method rounds values using banker's rounding. 
 String manipulation was used rather than working with floats to [avoid rounding errors](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues). 
@@ -465,7 +483,7 @@ result = bank_round(value=24553, place_from_left=2)
 
 ---
 
-## References
+## References <a name="references"></a>
 1. [NCIMS 2400a: SPC - Pour Plate (Oct 2013)](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf)
 2. [NCIMS 2400a-4: SPC - Petrifilm (Nov 2017)](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf)
 3. [Built-in Functions - round()](https://docs.python.org/3/library/functions.html?highlight=round#round)

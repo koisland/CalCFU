@@ -1,5 +1,5 @@
 import logging
-from calcfu.calc_config import CalcConfig
+from .calc_config import CalcConfig
 
 # Create the logger and set level to info.
 loggers = logging.getLogger(__name__)
@@ -16,3 +16,4 @@ logger_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %
 logger_handler.setFormatter(logger_formatter)
 
 loggers.addHandler(logger_handler)
+
