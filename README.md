@@ -1,5 +1,5 @@
 # CalCFU
-#### A fast CFU calculator built in Python and R using the NCIMS 2400 standards.
+#### A CFU calculator built in Python and R using the NCIMS 2400 standards.
 
 ---
 

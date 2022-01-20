@@ -94,7 +94,7 @@ def create_3m_groups(groups: pd.DataFrame, weighed: bool, plt_type: str, dils: s
     :return:
     """
     
-    if dils != ["None"]:
+    if len(dils) != 1:
         dils = [int(dil) for dil in dils]
         
     plt_groups = []
@@ -168,7 +168,7 @@ def main():
     ap.add_argument("--weighed", "-w", action="store_true", help="Weighed plate?")
     ap.add_argument("--group_n", "-g", default = 0, help="Number to group by (0 for id).")
     ap.add_argument("--plate", "-p", default = "None", help="Plate type (None to use recorded vals).")
-    ap.add_argument("--dilution", "-d", default = "None", nargs = "*", help="Dilutions (None to use recorded vals).")
+    ap.add_argument("--dilution", "-d", default = ["None"], nargs = "*", help="Dilutions (None to use recorded vals).")
     args = vars(ap.parse_args()).values()
     try:
         out = r_auto_results(*args)
