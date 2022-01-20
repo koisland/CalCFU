@@ -309,8 +309,8 @@ server <- function(input, output, session) {
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
 
       # Run args to calcfu scripts
-      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
-      res <- system2("bash", args = cmd, stdout = TRUE)
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py")
+      res <- system2("python3", args = cmd, stdout = TRUE)
       
       if (file.exists(t_o_path)){
         return(read.csv(t_o_path))

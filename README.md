@@ -79,13 +79,19 @@ Proper data entry is critical for correct results.
       * The group number must be a divisor of the total number of rows.
           * *84 rows with groups of 3 is okay*.
           * *84 rows with groups of 5 is not okay*.
-        
       * Default: Use Sample IDs to group plates by.
           * If no ID is provided, order entered is used for dilution order.
       * Verification plates are always omitted.
   * *Allow Different Dilutions?*
+    * Ignore dilutions and use a set dilution group for calculations.
+    * If the number of plates is >2, cycle through the dilutions.
   * *Allow Different Plate Types?*
-
+    * Ignore plate types and use a set plate type for calculations.
+    * Each plate type uses different columns to calculate values.
+      * PAC - Red Raw Count
+      * RAC - Red Raw Count, Blue Raw Count
+      * PCC - Red Gas Raw Count
+      
 ### Technical Info <a name="calcfu_app_tech_info"></a>
 
 #### Development <a name="calcfu_app_development"></a>
@@ -95,7 +101,7 @@ While I would like this to see wider and more expanded usage, much of the 3M Rea
 
 However, if new developments arise, I will continue to maintain and update this project.
 
-Feel free to contact me at [koshima789@gmail.com]() for any questions, concerns, or new ideas.
+Feel free to contact me at <koshima789@gmail.com> for any questions, concerns, or new ideas.
 
 ##### TO-DO <a name="calcfu_app_todo"></a>
   * [ ] Download results.
@@ -587,7 +593,7 @@ result = bank_round(value=24553, place_from_left=2)
     * `result=24000`
 ---
 
-### For full examples and tests, view [test_calc.py](https://github.com/koisland/CalCFU/blob/main/test_calc.py)...
+#### For full examples and tests, view [test_calc.py](https://github.com/koisland/CalCFU/blob/main/test_calc.py)...
 
 ---
 
