@@ -1,9 +1,10 @@
 import pathlib
 import argparse
 import pandas as pd
-from calculator import CalCFU
-from plate import Plate
-from utils import split_given_size 
+
+from calcfu.calculator import CalCFU
+from calcfu.plate import Plate
+from calcfu.utils import split_given_size 
 
 
 def r_man_results(input_path, output_path):

@@ -1,5 +1,5 @@
 import logging
-from calcfu.calc_config import CalcConfig
+from .calc_config import CalcConfig
 
 # Create the logger and set level to info.
 loggers = logging.getLogger(__name__)

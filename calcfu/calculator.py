@@ -4,9 +4,9 @@ from typing import List, Optional
 from functools import reduce
 from dataclasses import dataclass
 
-from plate import Plate
-from calc_config import CalcConfig
-from exceptions import CalCFUError
+from .plate import Plate
+from .calc_config import CalcConfig
+from .exceptions import CalCFUError
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +55,12 @@ class CalCFU(CalcConfig):
         return int(total / (div_factor * (10 ** int(main_dil))))
 
     def _calc_no_dil_valid(self, report_count):
-        # Use reduce to reduce plates to a single plate:
-        #   plate with the lowest absolute difference between the hbound and value
-        closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.hbound_abs_diff), self.plates)
+        # If all plates have same absolute diff, take plate with highest dilution.
+        if all(plt.hbound_abs_diff == self.plates[0].hbound_abs_diff for plt in self.plates):
+            closest_to_hbound = min(self.plates, key=lambda x: x.dilution)
+        else:
+            # Find plate with the lowest absolute difference between the hbound and value
+            closest_to_hbound = min(self.plates, key=lambda x: x.hbound_abs_diff)
 
         # if reporting, use closest bound; otherwise, use count.
         value = closest_to_hbound.closest_bound if report_count else closest_to_hbound.count

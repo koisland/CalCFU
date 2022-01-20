@@ -46,9 +46,6 @@ ui <- fluidPage(
                # Input: Checkbox if file has header ----
                checkboxInput("header", "File contains a header row?", TRUE)),
         
-        # adjust color of options msg
-        tags$head(tags$style("#options_msg{color: red; font-size: 16px;}")),
-        
         column(4, 
                dateRangeInput("dates", "Date Range", 
                               min = "2000-01-01"),
@@ -76,16 +73,12 @@ ui <- fluidPage(
     ),
     tabPanel(
       title = "Manual",
-      tags$head(
-        tags$style(HTML('#man_submit{background-color:orange}'))
-        ),
-      div(style="display:inline-block", 
-          actionButton("man_submit", label = "Save"), style="float:right"),
-      hr(),
       tabsetPanel(
         tabPanel(title = "Input",
                  br(),
-                 dataTableOutput("man_input") %>% withSpinner()
+                 dataTableOutput("man_input") %>% withSpinner(),
+                 br(),
+                 actionButton("man_submit", label = "Save"),
                 ),
         tabPanel(title = "Output",
                  br(),

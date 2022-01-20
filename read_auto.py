@@ -6,11 +6,11 @@ import itertools
 import pandas as pd
 import numpy as np
 
-from calc_config import CalcConfig
-from calculator import CalCFU
-from plate import Plate
-from exceptions import CalCFUError, PlateError, ReaderError
-from utils import split_given_size
+from calcfu.calc_config import CalcConfig
+from calcfu.calculator import CalCFU
+from calcfu.plate import Plate
+from calcfu.exceptions import CalCFUError, PlateError, ReaderError
+from calcfu.utils import split_given_size
 
 logger = logging.getLogger(__name__)
 

@@ -252,7 +252,7 @@ server <- function(input, output, session) {
   
   exec_cmd <- function(i_path, o_path, shiny_input, type = "sh", method = "auto") {
     if (type == "sh") {
-      cmd <- c(sprintf("calc_%s.sh", method), i_path, o_path)
+      cmd <- c(sprintf("../read_%s.sh", method), i_path, o_path)
       if ("Weighed?" %in% input$options) {
         cmd <- append(cmd, "True")
       } else {
@@ -277,7 +277,7 @@ server <- function(input, output, session) {
       }
 
     } else {
-      cmd <- c(sprintf("../calcfu/read_r_%s.py", method), "-i", i_path, "-o", o_path)
+      cmd <- c(sprintf("../read_r_%s.py", method), "-i", i_path, "-o", o_path)
 
       if ("Weighed?" %in% input$options) {
         cmd <- append(cmd, "-w")
@@ -309,8 +309,8 @@ server <- function(input, output, session) {
       write.csv(rv$res_auto_df, t_i_path, row.names = FALSE)
 
       # Run args to calcfu scripts
-      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "py")
-      res <- system2("python3", args = cmd, stdout = TRUE)
+      cmd <- exec_cmd(t_i_path, t_o_path, input, type = "sh")
+      res <- system2("bash", args = cmd, stdout = TRUE)
       
       if (file.exists(t_o_path)){
         return(read.csv(t_o_path))
