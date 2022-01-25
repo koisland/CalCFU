@@ -16,6 +16,7 @@ RUN apt-get update && \
 
 # copy folder and set workdir 
 RUN mkdir /home/CalCFU
+RUN mkdir /home/CalCFU/logs
 
 COPY . /home/CalCFU
 
