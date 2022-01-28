@@ -5,7 +5,8 @@ server <- function(input, output, session) {
   
   rv <- reactiveValues(
     res_man_df = NULL,
-    res_auto_df = NULL
+    res_auto_df = NULL,
+    missing_cols = NULL
   )
   
   stop_alert <- function(msg, title, msg_type = "error") {
@@ -14,7 +15,7 @@ server <- function(input, output, session) {
       title = paste0(stringr::str_to_title(msg_type), ": ", title),
       text = msg,
       type = msg_type)
-    shiny:::reactiveStop()
+    shiny:::reactiveStop(msg)
   }
   
   process_data <- function(df, input) {
@@ -67,34 +68,40 @@ server <- function(input, output, session) {
 
   }
   
+  check_cols <- function(data, input) {
+    # if no header, add colnames. can't do if header, cause might erase data.
+    data_column_names <- gsub("\\.|\\/", " ", names(data))
+    column_names <- gsub("\\/", " ", readLines("../data/3M_colnames.txt"))
+    
+    col_check <- data_column_names == column_names
+    missing_cols <- column_names[!col_check]
+    rv$missing_cols <- missing_cols
+    
+    if (all(col_check)) {
+      return(data)
+    } else if (length(data_column_names) == length(column_names) && isFALSE(input$header)){
+      # to avoid read errors, set column names of df if *equal num of columns and *header is false
+      names(data) <- column_names
+      return(data)
+    } else {
+      stop_alert(paste("One or multiple columns are missing.", "[", paste(rv$missing_cols, collapse = ", "), "]"), "Invalid Columns")
+    }
+  }
+  
   read_data <- function(input) {
     # when reading semicolon separated files,
     # having a comma separator causes `read.csv` to error
     tryCatch(
       {
-        df <- read.csv(input$file$datapath,
-                       header = input$header,
-                       sep = input$sep)
-        
-        if (!isTRUE(input$header)) {
-          # if no header, add colnames. can't do if header, cause might erase data.
-          df_column_names <- gsub("\\.", " ", names(df))
-          column_names <- readLines("../data/3M_colnames.txt")
-          
-          # TODO: Add column validation.
-          # check if column names same length as df.
-          if (all(df_column_names == column_names)) {
-            names(df) <- column_names
-          } else {
-            stop_alert("One or multiple columns are missing.", "Invalid Columns")
-          }
-        }
+        df <- read.csv(input$file$datapath, header = input$header, sep = input$sep) %>%
+          check_cols(input)
         
         return(df)
       },
       error = function(e) {
-        # if file header left in results.
+        # if file header left in results and num cols doesn't match df.
         if (e$message == "more columns than column names") {
+          # Equal num of columns and header is false.
           og_df <- read.csv(input$file$datapath,
                             header = FALSE,
                             sep = input$sep)
@@ -105,11 +112,13 @@ server <- function(input, output, session) {
           # make first row of initial df the column names
           names(edited_df) <- og_df[2,]
           
-          return(edited_df)
-        } 
+          # recheck cols
+          final_df <- check_cols(edited_df, input)
+          return(final_df)
+        }
         else {
           # return a safeError if a parsing error occurs
-          stop_alert("Incorrect separator.", "Read Failure")
+          stop_alert(e$message, "Read Failure")
         }
       }
     )

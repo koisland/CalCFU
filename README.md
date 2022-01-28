@@ -97,17 +97,14 @@ Proper data entry is critical for correct results.
 #### Development <a name="calcfu_app_development"></a>
 All future updates to this project can be found [here.](https://github.com/koisland/CalCFU)
 
-While I would like this to see wider and more expanded usage, much of the 3M Reader usage rules are tied to the NCIMS 2400s which are fairly strict and has seen little change over the years.
-
-However, if new developments arise, I will continue to maintain and update this project.
+While I would like this to see wider and more expanded usage (LIMS integration), much of the 3M Reader usage rules are tied to the NCIMS 2400s which is fairly strict and has seen little change over the years.
 
 Feel free to contact me at <koshima789@gmail.com> for any questions, concerns, or new ideas.
 
 ##### TO-DO <a name="calcfu_app_todo"></a>
   * [ ] Download results.
+  * [ ] R unit tests for reader.
   * [ ] Better manual calculator UI and settings.
-  * [ ] Setup `PostgreSQL` database.
-
   
 #### Deployment <a name="calcfu_app_deployment"></a>
 This project is currently deployed at [https://cahfs-sanb.org](https://cahfs-sanb.org) for use in the CAHFS San Bernardino Milk Quality department.

@@ -16,6 +16,7 @@ RUN apt-get update && \
 
 # copy folder and set workdir 
 RUN mkdir /home/CalCFU
+RUN mkdir /home/CalCFU/logs
 
 COPY . /home/CalCFU
 
@@ -28,7 +29,7 @@ RUN pip3 install -r ../requirements.txt
 RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'renv::consent(provided = TRUE)'
 RUN Rscript -e 'renv::restore()'
-
+l
 # Expose port 
 EXPOSE 3838
 
