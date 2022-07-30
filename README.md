@@ -1,5 +1,5 @@
 # CalCFU
-[![Tests](https://github.com/koisland/CalCFU/actions/workflows/main.yaml/badge.svg)](https://github.com/koisland/CalCFU/actions/workflows/main.yaml)
+[![Tests](https://github.com/koisland/CalCFU/actions/workflows/main.yaml/badge.svg?branch=py_mod)](https://github.com/koisland/CalCFU/actions/workflows/main.yaml)
 [![PyPi Version](https://img.shields.io/pypi/v/calcfu?color=orange)](https://pypi.org/project/calcfu/)
 
 ---
