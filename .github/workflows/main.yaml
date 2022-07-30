@@ -1,4 +1,4 @@
-name: CalCFU
+name: Tests
 
 on:
   push:
