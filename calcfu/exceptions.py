@@ -1,5 +1,4 @@
 import re
-import pprint
 import logging
 import traceback
 
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 def check_if_unittest():
     stack = repr(traceback.extract_stack())
     # pprint.pprint(stack)
-    if re.search("test_(calc|reader)\.py", stack):
+    if re.search(r"test_(calc|reader)\.py", stack):
         return True
     else:
         return False
