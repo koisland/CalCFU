@@ -1,9 +1,12 @@
 # CalCFU
+[![Tests](https://github.com/koisland/CalCFU/actions/workflows/main.yaml/badge.svg)](https://github.com/koisland/CalCFU/actions/workflows/main.yaml)
+[![PyPi Version](https://img.shields.io/pypi/v/calcfu?color=orange)](https://pypi.org/project/calcfu/)
 
 ---
 
 ### Table of Contents
 * [Overview](#calcfu_overview)
+* [Getting Started](#setup)
 * [`Plate` Class](#plate_cls)
   * [Fields](#plate_cls_fields)
       * [Validation](#plate_cls_arg_val)
@@ -17,27 +20,36 @@
       * [`calc_no_dil_valid`](#calcfu_cls_calc_no_valid)
       * [`calc_mult_dil_valid`](#calcfu_cls_calc_mult_valid)
       * [`bank_round`](#calcfu_cls_bank_round)
-      
+
 ---
 
-## Overview <a name="calcfu_overview"></a> 
+## Overview <a name="calcfu_overview"></a>
 These Python scripts calculate CFU counts for plating methods outlined in the NCIMS 2400 using two custom classes.
 * `Plate` for storing plate characteristics.
 * `CalCFU` for the calculator logic.
 
 While the calculation can be performed easily in most cases,
-this script allows for bulk-automated calculations where any dilution and number of plates can be used. 
+this script allows for bulk-automated calculations where any dilution and number of plates can be used.
 
 The code below outlines the entire process and references the NCIMS 2400s.
 * [NCIMS 2400a: SPC - Pour Plate (Oct 2013)](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf)
 * [NCIMS 2400a-4: SPC - Petrifilm (Nov 2017)](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf)
 
 
+---
+
+## Getting Started <a name="setup"></a>
+```shell
+pip install calcfu
+```
+
+---
+
 ## `Plate` <a name="plate_cls"></a>
 Plates are set up via the `Plate` dataclass.
 
 ```python
-from calcfu.plate import Plate
+from calcfu import Plate
 
 # 1 PAC plate with a 10^-2 dilution of a weighed sample yielding a total count of 234.
 plates_1 = Plate(plate_type="PAC", count=234, dilution=-2, weighed=True, num_plts=1)
@@ -50,7 +62,7 @@ Each instance of the dataclass is created with five arguments which are set as f
 
 Arguments:
 * `plate_type` [ *str* ]
-    * Plate type. 
+    * Plate type.
 * `count` [ *int* ]
     * Raw plate counts.
 * `dilution` [ *str* ]
@@ -103,7 +115,7 @@ class CalCFU(CalcConfig):
 class CalcConfig:
     # Logging/File Path Variables
     ...
-    
+
     VALID_DILUTIONS = (0, -1, -2, -3, -4)
     PLATE_RANGES = {
         "SPC": (25, 250),
@@ -124,7 +136,7 @@ class CalcConfig:
         "weighed": lambda weighed: isinstance(weighed, bool),
         # num_plts must be an integer and greater than 0
         "num_plts": lambda num_plts: isinstance(num_plts, int) and num_plts > 0,
-        
+
         # plates must all be an instance of the Plate dataclass and must be all the same plate_type
         "plates": lambda plates, plt_cls: all(isinstance(plate, plt_cls) and plate.plate_type == plates[0].plate_type
                                               for plate in plates),
@@ -132,7 +144,7 @@ class CalcConfig:
  ```
 
 ### Field Validation <a name="plate_cls_arg_val"></a>
-Arguments/fields are validated via a `__post_init__` method where each key is checked 
+Arguments/fields are validated via a `__post_init__` method where each key is checked
 against conditions in `self.INPUT_VALIDATORS`
 
 ```python
@@ -195,7 +207,7 @@ def closest_bound(self):
     * Absolute difference of `count` and high of `cnt_range`.
 * `closest_bound` [ *int* ]
     * Closest count in `cnt_range` to `count`.
-    * Based on minimum absolute difference between `count` and `cnt_range`s\. 
+    * Based on minimum absolute difference between `count` and `cnt_range`s\.
       The smaller the difference, the closer the `count` is to a bound.
 ---
 
@@ -204,7 +216,7 @@ The calculator is contained in the `CalCFU` dataclass.
 Using the previously created `Plate` instances, a `CalCFU` instance is created.
 
 ```python
-from calcfu.calculator import CalCFU
+from calcfu import CalCFU
 
 # Setup calculator with two PAC plates that contain a weighed sample.
 calc = CalCFU(plates=[plates_1, plates_2])
@@ -215,13 +227,13 @@ Each instance of CountCalculator is initialized with a list of the plates to be 
 
 Arguments:
 * `plates` [ *list* ]
-    * Contains Plate instances. 
+    * Contains Plate instances.
     * Validated via `__post_init__` method.
 * `plate_ids` [ *list* ]
     * **Optional**
-    * Contains list of plate IDs. 
+    * Contains list of plate IDs.
     * Used to identify incorrect plates in error message.
-    
+
 ```python
 @dataclass(frozen=True, order=True)
 class CalCFU(CalcConfig):
@@ -252,26 +264,26 @@ def reported_units(self):
 
 ---
 
-Two methods are available for use with the CountCalculator instance: 
+Two methods are available for use with the CountCalculator instance:
 * `calculate`
 * `bank_round`
 
 
 ### `calculate(self)` <a name="calcfu_cls_calculate"></a>
 
-This method is the "meat-and-potatoes" of the script. 
-It calculates the reported/adjusted count based on the plates given. 
+This method is the "meat-and-potatoes" of the script.
+It calculates the reported/adjusted count based on the plates given.
 
 Optional arguments:
 
 * `round_to` [ *int* ]
     * Digit to round to. Default is 1.
         * Relative to leftmost digit (0). *Python is 0 indexed*.
-    * ex. Round to 1: 2(5),666 
+    * ex. Round to 1: 2(5),666
     * ex. Round to 3: 25,6(6)6
 * `report_count` [ *bool* ]
     * Option to return reported count or unrounded, unlabeled adjusted count.
-    
+
 First, each plate is checked to see if its count is in between the accepted count range.
 Based on the number of valid plates, a different method is used to calculate the result.
 
@@ -307,28 +319,28 @@ This function runs when *no plates have valid counts*.
 
 Arguments:
 * `report_count` [ *bool* ]
-    * Same as `calculate`.    
+    * Same as `calculate`.
 
 Procedure:
 
-1. Reduce the `self.plates` down to one plate by checking adjacent plates' `hbound_abs_diff`. 
+1. Reduce the `self.plates` down to one plate by checking adjacent plates' `hbound_abs_diff`.
    * **The plate with the smallest difference is closest to the highest acceptable count bound.**
        * [NCIMS 2400a.16.h](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
-   * `Ex. |267 - 250| = 17 and |275 - 250| = 25` 
+   * `Ex. |267 - 250| = 17 and |275 - 250| = 25`
    * `17 < 25 so 267 is closer to 250 than 275.`
 2. Set throwaway variable `value` to `count` or `closest_bound` based on if reported count needed.
 3. Finally, return `sign` and multiply the closest bound by the reciprocal of the dilution.
     * [NCIMS 2400a.16.l](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | [NCIMS 2400a-4.17.h](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
-    
+
 ``` python
-def _calc_no_dil_valid(self, report_count):     
+def _calc_no_dil_valid(self, report_count):
     # Use reduce to reduce plates to a single plate:
     #   plate with the lowest absolute difference between the hbound and value
     closest_to_hbound = reduce(lambda p1, p2: min(p1, p2, key=lambda x: x.hbound_abs_diff), self.plates)
 
     # if reporting, use closest bound; otherwise, use count.
     value = closest_to_hbound.closest_bound if report_count else closest_to_hbound.count
-    
+
     return closest_to_hbound.sign, value * (10 ** abs(closest_to_hbound.dilution))
 ```
 
@@ -337,7 +349,7 @@ This method runs if *multiple plates have valid counts*.
 
 Variables:
 * `main_dil` [ *int* ]
-    * The lowest dilution of the `valid_plates`. 
+    * The lowest dilution of the `valid_plates`.
 * `dil_weights` [ *list* ]
     * The weights each dilution/plate contributes to the total count.
 * `div_factor` [ *int* ]
@@ -348,36 +360,36 @@ Procedure:
 1. First, sum counts from all valid plates (`plates_1` and `plates_2`).<sup>1</sup>
 2. If all plates are the same dilution, set `div_factor` to the total number of valid plates.
     * Each plate has equal weight in `div_factor`.
-    * [NCIMS 2400a.16.l.1](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) | 
+    * [NCIMS 2400a.16.l.1](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) |
       [NCIMS 2400a-4.17.e](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
 3. Otherwise, we will take a weighted average taking into account how each dilution contributes to the ```div_factor```.<sup>2</sup>
 4. Each dilution will have a *weight* of how much it contributes to the total count (via the ```div_factor```)
-    * If the plate dilution is the ```main_dil```, set the dilution's weight to 1. 
-        * **This value is the ```main_dil```'s weight towards the total count.** 
-        * The least diluted plate contributes the largest number of colonies 
+    * If the plate dilution is the ```main_dil```, set the dilution's weight to 1.
+        * **This value is the ```main_dil```'s weight towards the total count.**
+        * The least diluted plate contributes the largest number of colonies
           to the overall count. It will always be 1 and serves to normalize the effect of the other dilutions.
         * [NCIMS 2400a.16.l.1](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=8) |
           [NCIMS 2400a-4.17.e](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=11)
     * If it is not, subtract the absolute value of ```main_dil``` by the absolute value of ```plate.dilution```.
-        * By raising 10 to the power of ```abs_diff_dil```, **the plate dilution's weight - relative to ```main_dil``` - is calculated.** 
-5. Each dilution weight is then multiplied by the number of plates used for that dilution. 
+        * By raising 10 to the power of ```abs_diff_dil```, **the plate dilution's weight - relative to ```main_dil``` - is calculated.**
+5. Each dilution weight is then multiplied by the number of plates used for that dilution.
 6. The sum of all dilution weights in ```dil_weights``` is the division weight, ```div_factor```.
 7. Dividing the ```total``` by the product of ```div_factor``` and ```main_dil``` yields the adjusted count.<sup>3</sup>
 
-| ![](docs/figures/total.png) | 
-|:--:| 
+| ![](docs/figures/total.png) |
+|:--:|
 | *Figure 1. Sum of counts from all valid plates (Step 2)* |
 
 <br>
 
-| ![](docs/figures/div_factor.png) | 
-|:--:| 
+| ![](docs/figures/div_factor.png) |
+|:--:|
 | *Figure 2. Weighted average formula. (Step 3)* |
 
 <br>
 
-| ![](docs/figures/adj_count.png) | 
-|:--:| 
+| ![](docs/figures/adj_count.png) |
+|:--:|
 | *Figure 3. Adjusted count formula. (Step 7)* |
 
 <br>
@@ -410,8 +422,8 @@ def _calc_multi_dil_valid(self):
 
 ### `bank_round(value, place_from_left)` <a name="calcfu_cls_bank_round"></a>
 
-This method rounds values using banker's rounding. 
-String manipulation was used rather than working with floats to [avoid rounding errors](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues). 
+This method rounds values using banker's rounding.
+String manipulation was used rather than working with floats to [avoid rounding errors](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues).
 
 Arguments:
 * `value` [ *int* ]
@@ -424,11 +436,11 @@ Variables:
 * `value_len` [ *int* ]
     * Len of *string value*.
 * `str_abbr_value` [ *str* ]
-    * Abbreviated value as string. 
+    * Abbreviated value as string.
     * Sliced to only allow 1 digit before rounded digit.
         * Python rounding behavior changes based on digits after.
             * [Built-in Functions - round()](https://docs.python.org/3/library/functions.html?highlight=round#round)
-        * [NCIMS 2400a.19.c.1.a-b](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=10) | 
+        * [NCIMS 2400a.19.c.1.a-b](http://ncims.org/wp-content/uploads/2017/01/2400a-Standard-and-Coliform-Plate-Count-rev.-10-13.pdf#page=10) |
           [NCIMS 2400a-4.19.d.1.a-b](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf#page=13)
 * `str_padded_value` [ *str* ]
     * Zero-padded value as string.
@@ -436,10 +448,10 @@ Variables:
     * Abbreviated, padded value as integer.
 * `adj_place_from_left`
     * Adjusted index for base python `round()`. Needs to be ndigits from decimal point.
-    * `Ex. round(2(1)5., -1) -> 220`   
+    * `Ex. round(2(1)5., -1) -> 220`
 * `final_val` [ *int* ]
     * Rounded value.
-    
+
 ```python
 @staticmethod
 def bank_round(value, place_from_left):
@@ -461,25 +473,22 @@ def bank_round(value, place_from_left):
 ```
 
 Example:
-```python 
+```python
 result = bank_round(value=24553, place_from_left=2)
 ```
 
-1. Find the length of the value as a string. 
-    * `value_len=5` 
-2. Abbreviate value as string. 
+1. Find the length of the value as a string.
+    * `value_len=5`
+2. Abbreviate value as string.
     * `str_abbr_value="245"`
-3. Pad value as string out to original length. 
+3. Pad value as string out to original length.
     * `str_padded_value="24500"`
-4. Convert padded value back to a number. 
+4. Convert padded value back to a number.
     * `adj_value=24500`
-5. Reindex `place_from_left` for the `round` function. 
+5. Reindex `place_from_left` for the `round` function.
     * `adj_place_from_left=-3`
-6. Round `adj_value` with `place_from_left`, the new index. 
+6. Round `adj_value` with `place_from_left`, the new index.
     * `result=24000`
----
-
-### For full examples and tests, view [test_calc.py](https://github.com/koisland/CalCFU/blob/main/test_calc.py)...
 
 ---
 
@@ -488,12 +497,3 @@ result = bank_round(value=24553, place_from_left=2)
 2. [NCIMS 2400a-4: SPC - Petrifilm (Nov 2017)](http://ncims.org/wp-content/uploads/2017/12/2400a-4-Petrifilm-Aerobic-Coliform-Count-Rev.-11-17-1.pdf)
 3. [Built-in Functions - round()](https://docs.python.org/3/library/functions.html?highlight=round#round)
 4. [Floating Point Arithmetic: Issues and Limitations](https://docs.python.org/3/tutorial/floatingpoint.html#tut-fp-issues)
-
-
-
-
-
-
-
-
-

@@ -3,10 +3,10 @@ name: CalCFU
 on:
   push:
     branches:
-    - main
+    - py_mod
   pull_request:
     branches:
-    - main
+    - py_mod
 
 jobs:
   build:
