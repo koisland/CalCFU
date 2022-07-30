@@ -1,15 +1,14 @@
-import pathlib
 import argparse
 import pandas as pd
 
-from calcfu.calculator import CalCFU
-from calcfu.plate import Plate
-from calcfu.utils import split_given_size 
+from calcfu import CalCFU
+from calcfu import Plate
+from utils import split_given_size
 
 
-def r_man_results(input_path, output_path):
+def r_man_results(input_path: str, output_path: str):
     """
-    
+    Read manual input UI results.
     """
     df = pd.read_csv(input_path)
     # Convert columns to correct datatype.
@@ -24,8 +23,14 @@ def r_man_results(input_path, output_path):
         # sep the two sep dfs
         df1, df2 = df.iloc[0], df.iloc[1]
         # init the plate cls.
-        plt_pair = [Plate(df1["Type"], df1["Count"], df1["Dilution"], False, df1["NumberPlates"]),
-                    Plate(df2["Type"], df2["Count"], df2["Dilution"], False, df2["NumberPlates"])]
+        plt_pair = [
+            Plate(
+                df1["Type"], df1["Count"], df1["Dilution"], False, df1["NumberPlates"]
+            ),
+            Plate(
+                df2["Type"], df2["Count"], df2["Dilution"], False, df2["NumberPlates"]
+            ),
+        ]
         plates.append(plt_pair)
         # merge labels to string with both labels
         pair_ids.append(f"{df1['Label']} & {df2['Label']}")
