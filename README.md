@@ -1,6 +1,6 @@
 # CalCFU
 
-[![](https://img.shields.io/docker/v/koisland/calcfu)](#https://hub.docker.com/r/koisland/calcfu)
+[![](https://img.shields.io/docker/v/koisland/calcfu)](https://hub.docker.com/r/koisland/calcfu)
 [![PyPi Version](https://img.shields.io/pypi/v/calcfu?color=orange)](https://pypi.org/project/calcfu/)
 
 A CFU calculator app built in `Python` and `R` using the NCIMS 2400 standards.
